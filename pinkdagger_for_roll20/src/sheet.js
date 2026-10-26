@@ -146,14 +146,33 @@ function renderFearSheet(doc, root, medoStats) {
     });
 }
 
+// Modo simplificado: o CSS esconde os detalhes e o tooltip mostra o card completo
+function applySimpleCardView(doc, root, containerSelectors) {
+    if (getPinkDaggerSettings().cardView !== 'simple') return;
+    root.classList.add('dh-cards-simple');
+    containerSelectors.forEach(selector => {
+        const container = root.querySelector(selector);
+        if (!container) return;
+        attachCardTooltip(doc, container, '.dh-heritage-card, .dh-weapon-card, .dh-domain-card', (cardElem) => {
+            const clone = cardElem.cloneNode(true);
+            clone.querySelectorAll('.dh-card-edit-btn, .dh-weapon-edit-btn').forEach(btn => btn.remove());
+            return clone.outerHTML;
+        });
+    });
+}
+
 function populateDaggerheartData(doc) {
     const root = doc.getElementById('dh-content-root');
     if (!root) return;
 
-    const nameInput = doc.querySelector('input.name');
+    // O re-render remove os cards; o tooltip e o modo simplificado são reaplicados abaixo
+    hideCardTooltip(doc);
+    root.classList.remove('dh-cards-simple');
+
     const charNameElem = doc.getElementById('dh-char-name');
-    if (charNameElem && nameInput) {
-        charNameElem.innerText = nameInput.value || 'Personagem sem Nome';
+    if (charNameElem) {
+        const charName = getSheetCharacterName(doc);
+        charNameElem.innerText = charName ? `${charName} (PinkDagger)` : 'PinkDagger';
     }
 
     const attributeElements = doc.querySelectorAll('.attributesabilities .attributes .attrib');
@@ -549,6 +568,7 @@ function populateDaggerheartData(doc) {
         `;
 
         root.innerHTML = npcHeaderHTML + npcAttrsHTML + npcExpSectionHTML + npcAbilitiesSectionHTML;
+        applySimpleCardView(doc, root, ['#dh-npc-abilities-container']);
 
         // --- Listeners do NPC ---
         // Rolagem da arma
@@ -999,6 +1019,8 @@ function populateDaggerheartData(doc) {
                         <div class="dh-domain-desc">${cardDesc}</div>
                     </div>
                 `;
+            } else if (lowerName.startsWith('vau_')) {
+                // Cartas na reserva só aparecem no modal da Reserva
             } else if (!fixedTraits.includes(lowerName) && rawName !== '') {
                 validAbilitiesCount++;
                 generalAbilitiesHTML += `<li class="dh-ability-item" data-card-fullname="${rawName}"><span>${rawName}</span></li>`;
@@ -1072,7 +1094,10 @@ function populateDaggerheartData(doc) {
     let finalDomainsHTML = `
         <div class="dh-section-title">
             <span>Cartas de Domínio</span>
-            <button class="dh-add-btn" id="dh-add-domain" title="Adicionar Carta de Domínio">+</button>
+            <div class="dh-section-actions">
+                <button class="dh-add-btn dh-vault-btn" id="dh-open-vault" title="Abrir Reserva">🗃️</button>
+                <button class="dh-add-btn" id="dh-add-domain" title="Adicionar Carta de Domínio">+</button>
+            </div>
         </div>
         <div class="dh-domains-grid" id="dh-domains-container">
             ${domainCount > 0 ? domainCardsHTML : '<span style="color: #718096; font-size: 0.8em; grid-column: 1/-1;">Nenhuma carta de domínio cadastrada.</span>'}
@@ -1134,6 +1159,8 @@ function populateDaggerheartData(doc) {
     generalAbilitiesHTML += '</ul>';
 
     root.innerHTML = traitsHTML + statsHTML + defensesHTML + customStatsHTML + finalHeritageHTML + finalClassHTML + finalWeaponsHTML + finalDomainsHTML + inventoryHTML + generalAbilitiesHTML + finalLevelHTML;
+
+    applySimpleCardView(doc, root, ['#dh-heritage-container', '#dh-class-container', '#dh-weapons-container', '#dh-domains-container']);
 
     const invTextarea = root.querySelector('#dh-inv-text');
     if (invTextarea && inventoryTextareaElem) {
@@ -1208,6 +1235,8 @@ function populateDaggerheartData(doc) {
 
     const addDomainBtn = root.querySelector('#dh-add-domain');
     if (addDomainBtn) addDomainBtn.addEventListener('click', () => addNewMacroToRoll20(doc, 'dom', 'Nome da nova Carta de Domínio:'));
+    const openVaultBtn = root.querySelector('#dh-open-vault');
+    if (openVaultBtn) openVaultBtn.addEventListener('click', () => openVaultModal(doc));
 
     if (moneyMap.punhado.exists) setupMoneyControl(root, 'punhado', moneyMap.punhado);
     if (moneyMap.bolsa.exists) setupMoneyControl(root, 'bolsa', moneyMap.bolsa);

@@ -255,6 +255,65 @@ function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// Nome do personagem: texto do título da janela do Roll20 (ignorando os botões dentro dele),
+// ou o campo de nome da ficha quando ela está em pop-out
+function getSheetCharacterName(doc) {
+    const titleElem = getSheetDialog(doc)?.querySelector('.ui-dialog-title');
+    if (titleElem) {
+        const titleText = Array.from(titleElem.childNodes)
+            .filter(node => node.nodeType === Node.TEXT_NODE)
+            .map(node => node.textContent)
+            .join('')
+            .trim();
+        if (titleText) return titleText;
+    }
+    return doc.querySelector('input.name')?.value?.trim() || '';
+}
+
+function findAbilityElementByName(doc, abilName) {
+    const target = abilName.trim().toLowerCase();
+    return Array.from(doc.querySelectorAll('.attributesabilities .abilities .abil')).find(abil => {
+        const name = abil.querySelector('.abilname')?.innerText?.trim() || (abil.querySelector('.abilname input')?.value?.trim() || '');
+        return name.toLowerCase() === target;
+    }) || null;
+}
+
+// Renomeia um macro na aba nativa (ex.: dom_X -> vau_X). Retorna true se conseguiu.
+async function renameAbilityInRoll20(doc, oldName, newName) {
+    const navTabs = doc.querySelector('.nav.nav-tabs');
+    const attrTabNav = navTabs?.querySelector('a[data-tab="attributesabilities"]');
+    const pinkDaggerNav = navTabs?.querySelector('a[data-tab="daggerheart"]');
+    if (!attrTabNav) return false;
+
+    attrTabNav.click();
+    await delay(150);
+
+    let renamed = false;
+    const abil = findAbilityElementByName(doc, oldName);
+    if (abil) {
+        const editBtn = abil.querySelector('.editabil');
+        if (editBtn) editBtn.click();
+        await delay(150);
+
+        const nameInput = abil.querySelector('.abilname input') || abil.querySelector('input.abilname');
+        if (nameInput) {
+            nameInput.value = newName;
+            nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+            nameInput.dispatchEvent(new Event('change', { bubbles: true }));
+            nameInput.dispatchEvent(new Event('blur', { bubbles: true }));
+            renamed = true;
+        }
+
+        const saveBtn = abil.querySelector('.saveabil');
+        if (saveBtn) saveBtn.click();
+        await delay(150);
+    }
+
+    if (pinkDaggerNav) pinkDaggerNav.click();
+    populateDaggerheartData(doc);
+    return renamed;
+}
+
 function abilityExistsInRoll20(doc, abilName) {
     const target = abilName.trim().toLowerCase();
     return Array.from(doc.querySelectorAll('.attributesabilities .abilities .abil')).some(abil => {

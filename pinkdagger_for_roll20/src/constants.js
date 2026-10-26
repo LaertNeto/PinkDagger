@@ -26,6 +26,12 @@ const FEAR_MACROS = {
 };
 const FEAR_DEFAULT_MAX = 12;
 
+// Configurações do usuário (salvas no navegador, valem para todas as fichas)
+const SETTINGS_STORAGE_KEY = 'pinkdagger_settings';
+const SETTINGS_DEFAULTS = {
+    cardView: 'detailed' // 'detailed' | 'simple'
+};
+
 // Atributos principais e recursos/trackers fixos do sistema Daggerheart
 const FIXED_TRAITS = ['agilidade', 'força', 'acuidade', 'instinto', 'presença', 'conhecimento'];
 const FIXED_TRACKERS = ['vida', 'fadiga', 'armadura', 'esperança'];

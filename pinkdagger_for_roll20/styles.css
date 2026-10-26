@@ -27,6 +27,54 @@
     text-transform: uppercase;
 }
 
+.dh-title-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dh-title-btn {
+    background: transparent;
+    border: 1px solid #3c4252;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.95em;
+    cursor: pointer;
+    filter: grayscale(1);
+    opacity: 0.7;
+    transition: all 0.15s ease;
+}
+
+.dh-title-btn:hover,
+.dh-title-btn-active {
+    filter: none;
+    opacity: 1;
+    border-color: #E85D9E;
+}
+
+/* Ficha fixada (dock): só a aba PinkDagger ocupa o iframe */
+body.dh-docked {
+    overflow: hidden !important;
+}
+
+body.dh-docked .daggerheart.tab-pane {
+    display: block !important;
+    position: fixed;
+    inset: 0;
+    z-index: 99990;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+    background: #12141c;
+}
+
+body.dh-docked .dh-container {
+    min-height: 100%;
+    box-sizing: border-box;
+    border-radius: 0;
+    border: none;
+}
+
 .dh-header-meta {
     display: flex;
     gap: 15px;
@@ -78,6 +126,234 @@
     background: #E85D9E;
     color: #12141c;
     transform: scale(1.08);
+}
+
+.dh-section-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.dh-vault-btn {
+    font-size: 12px;
+}
+
+/* Modal da Reserva de Cartas de Domínio */
+.dh-vault-modal-box {
+    max-width: 640px;
+}
+
+.dh-vault-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.dh-vault-column {
+    background: #12141c;
+    border: 1px solid #3c4252;
+    border-radius: 6px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 160px;
+}
+
+.dh-vault-column-title {
+    font-size: 0.8em;
+    font-weight: 700;
+    color: #E85D9E;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #3c4252;
+    padding-bottom: 5px;
+}
+
+.dh-vault-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 50vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.dh-vault-card {
+    background: #1b1f2b;
+    border: 1px solid #5a4730;
+    border-left: 3px solid #c89d54;
+    border-radius: 4px;
+    padding: 7px 10px;
+    font-size: 0.85em;
+    font-weight: bold;
+    color: #f1c40f;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.dh-vault-card:hover {
+    border-color: #E85D9E;
+    border-left-color: #E85D9E;
+    background: #232838;
+}
+
+/* Tooltip compartilhado: recebe um card completo dentro dele */
+.dh-card-tooltip {
+    position: fixed;
+    z-index: 100001;
+    width: 280px;
+    max-width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+    overflow: hidden;
+    display: none;
+    pointer-events: none;
+    font-family: 'Nunito', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #e2e8f0;
+}
+
+.dh-card-tooltip-visible {
+    display: block;
+}
+
+.dh-card-tooltip > * {
+    min-height: 0;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.7);
+}
+
+/* Modal de Configurações */
+.dh-settings-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dh-settings-label {
+    font-size: 0.85em;
+    font-weight: 700;
+    color: #cbd5e0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dh-settings-hint {
+    font-size: 0.78em;
+    color: #a0aec0;
+}
+
+.dh-settings-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #12141c;
+    border: 1px solid #3c4252;
+    border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+}
+
+.dh-settings-option:hover,
+.dh-settings-option:has(input:checked) {
+    border-color: #E85D9E;
+}
+
+.dh-settings-option input {
+    margin-top: 3px;
+    accent-color: #E85D9E;
+}
+
+.dh-settings-option span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.85em;
+}
+
+.dh-settings-option strong {
+    color: #f1c40f;
+}
+
+.dh-settings-option small {
+    color: #a0aec0;
+    font-size: 0.92em;
+}
+
+/* Modo simplificado dos cards (PC e habilidades do NPC): lista vertical só com o nome, detalhes no tooltip */
+.dh-cards-simple .dh-heritage-grid,
+.dh-cards-simple .dh-weapons-grid,
+.dh-cards-simple .dh-domains-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+}
+
+.dh-cards-simple .dh-npc-abilities-list {
+    gap: 6px;
+}
+
+/* Cada card vira uma linha: [tag] nome ........ [✏️] */
+.dh-cards-simple .dh-heritage-card,
+.dh-cards-simple .dh-weapons-grid .dh-weapon-card,
+.dh-cards-simple .dh-domain-card {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    min-height: 0;
+}
+
+.dh-cards-simple .dh-heritage-card:hover,
+.dh-cards-simple .dh-weapons-grid .dh-weapon-card:hover,
+.dh-cards-simple .dh-domain-card:hover {
+    transform: none;
+}
+
+.dh-cards-simple .dh-card-header,
+.dh-cards-simple .dh-domain-header,
+.dh-cards-simple .dh-weapons-grid .dh-weapon-header,
+.dh-cards-simple .dh-weapons-grid .dh-weapon-header > div {
+    display: contents;
+}
+
+.dh-cards-simple .dh-heritage-effect,
+.dh-cards-simple .dh-domain-desc,
+.dh-cards-simple .dh-domain-header > div,
+.dh-cards-simple .dh-weapons-grid .dh-weapon-desc,
+.dh-cards-simple .dh-weapons-grid .dh-weapon-trait-tag,
+.dh-cards-simple .dh-weapons-grid .dh-weapon-damage-tag {
+    display: none;
+}
+
+.dh-cards-simple .dh-heritage-tag {
+    order: 0;
+    flex-shrink: 0;
+}
+
+.dh-cards-simple .dh-heritage-title,
+.dh-cards-simple .dh-weapons-grid .dh-weapon-title,
+.dh-cards-simple .dh-domain-name {
+    order: 1;
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    font-size: 0.95em;
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+
+.dh-cards-simple .dh-card-edit-btn,
+.dh-cards-simple .dh-weapons-grid .dh-weapon-edit-btn {
+    order: 2;
+    flex-shrink: 0;
+}
+
+.dh-vault-empty {
+    color: #718096;
+    font-size: 0.8em;
+    padding: 4px 2px;
 }
 
 /* Variante de botão com + e label em duas linhas */
@@ -630,10 +906,25 @@
 }
 
 .dh-experiences-grid {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
     gap: 6px;
     flex-grow: 1;
+}
+
+/* Mensagem de "nenhuma experiência" ocupa a linha inteira */
+.dh-experiences-grid > :not(.dh-exp-card) {
+    grid-column: 1 / -1;
+}
+
+.dh-experiences-grid .dh-exp-card {
+    gap: 6px;
+}
+
+.dh-experiences-grid .dh-exp-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .dh-exp-card {

@@ -116,3 +116,65 @@ function resolveMacroVariables(text, attrMap = {}) {
     return result;
 }
 
+function getPinkDaggerSettings() {
+    try {
+        const saved = JSON.parse(window.localStorage.getItem(SETTINGS_STORAGE_KEY));
+        return { ...SETTINGS_DEFAULTS, ...(saved || {}) };
+    } catch (err) {
+        return { ...SETTINGS_DEFAULTS };
+    }
+}
+
+function savePinkDaggerSettings(changes) {
+    const settings = { ...getPinkDaggerSettings(), ...changes };
+    try {
+        window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    } catch (err) {}
+    return settings;
+}
+
+// Tooltip flutuante compartilhado (um por documento)
+function getCardTooltip(doc) {
+    let tooltip = doc.getElementById('dh-card-tooltip');
+    if (!tooltip) {
+        tooltip = doc.createElement('div');
+        tooltip.id = 'dh-card-tooltip';
+        tooltip.className = 'dh-card-tooltip';
+        doc.body.appendChild(tooltip);
+    }
+    return tooltip;
+}
+
+function hideCardTooltip(doc) {
+    doc.getElementById('dh-card-tooltip')?.classList.remove('dh-card-tooltip-visible');
+}
+
+function showCardTooltip(doc, cardElem, contentHTML) {
+    const tooltip = getCardTooltip(doc);
+    tooltip.innerHTML = contentHTML;
+    tooltip.classList.add('dh-card-tooltip-visible');
+
+    // Ao lado do card (direita, senão esquerda), sempre dentro da tela
+    const win = doc.defaultView;
+    const margin = 8;
+    const rect = cardElem.getBoundingClientRect();
+    const tipRect = tooltip.getBoundingClientRect();
+    let left = rect.right + margin;
+    if (left + tipRect.width > win.innerWidth - margin) left = rect.left - tipRect.width - margin;
+    left = Math.max(margin, Math.min(left, win.innerWidth - tipRect.width - margin));
+    const top = Math.max(margin, Math.min(rect.top, win.innerHeight - tipRect.height - margin));
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+}
+
+// getContentHTML(cardElem) devolve o HTML do tooltip, ou vazio para não mostrar
+function attachCardTooltip(doc, container, cardSelector, getContentHTML) {
+    container.addEventListener('mouseover', (e) => {
+        const cardElem = e.target.closest(cardSelector);
+        const contentHTML = cardElem && container.contains(cardElem) ? getContentHTML(cardElem) : '';
+        if (contentHTML) showCardTooltip(doc, cardElem, contentHTML);
+        else hideCardTooltip(doc);
+    });
+    container.addEventListener('mouseleave', () => hideCardTooltip(doc));
+    container.addEventListener('click', () => hideCardTooltip(doc));
+}

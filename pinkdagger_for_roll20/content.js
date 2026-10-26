@@ -52,15 +52,37 @@
             <div class="dh-container">
                 <div class="dh-title-bar">
                     <h2 id="dh-char-name">PinkDagger</h2>
-                    <div class="dh-header-meta">
-                        <span>Nível: <strong id="dh-char-nivel">-</strong></span>
-                        <span>Proficiência: <strong id="dh-char-prof">-</strong></span>
+                    <div class="dh-title-actions">
+                        <div class="dh-header-meta">
+                            <span>Nível: <strong id="dh-char-nivel">-</strong></span>
+                            <span>Proficiência: <strong id="dh-char-prof">-</strong></span>
+                        </div>
+                        <button type="button" class="dh-title-btn" id="dh-settings-btn" title="Configurações">⚙️</button>
+                        <button type="button" class="dh-title-btn" id="dh-dock-btn" title="Fixar ficha no canto da tela">📌</button>
                     </div>
                 </div>
                 <div id="dh-content-root"></div>
             </div>
         `;
         tabContent.appendChild(daggerheartPane);
+
+        daggerheartPane.querySelector('#dh-settings-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openSettingsModal(doc);
+        });
+
+        // O dock só funciona para fichas abertas em janela dentro do Roll20 (não em pop-out)
+        const dockBtn = daggerheartPane.querySelector('#dh-dock-btn');
+        if (getSheetDialog(doc)) {
+            dockBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleDock(doc);
+            });
+        } else {
+            dockBtn.remove();
+        }
 
         const allNavs = navTabs.querySelectorAll('li');
         const allPanes = tabContent.querySelectorAll('.tab-pane');

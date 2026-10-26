@@ -533,3 +533,169 @@ Lacaio (13) (passiva): o soldado é derrotado..."></textarea>
         });
     }
 }
+
+// Lê as cartas de domínio ativas (dom_) e da reserva (vau_) direto da aba nativa
+function collectDomainAndVaultCards(doc) {
+    const cards = { active: [], vault: [] };
+    doc.querySelectorAll('.attributesabilities .abilities .abil').forEach(abil => {
+        const rawName = abil.querySelector('.abilname')?.innerText?.trim() || (abil.querySelector('.abilname input')?.value?.trim() || '');
+        const lowerName = rawName.toLowerCase();
+        const isActive = lowerName.startsWith('dom_');
+        if (!isActive && !lowerName.startsWith('vau_')) return;
+
+        const macroTextarea = abil.querySelector('textarea, input[name*="action"]');
+        const fields = extractMacroFields(macroTextarea ? macroTextarea.value : '');
+        const nivel = fields['nível'] || fields['nivel'];
+        const desc = fields['descrição'] || fields['descricao'] || fields['desc'];
+        const card = {
+            rawName,
+            name: fields['name'] ? formatTextWithNewlines(fields['name']) : rawName.substring(4).trim(),
+            nivel: nivel ? formatTextWithNewlines(nivel) : '-',
+            custo: fields['custo'] ? formatTextWithNewlines(fields['custo']) : '-',
+            desc: desc ? formatTextWithNewlines(desc) : 'Sem descrição.'
+        };
+        (isActive ? cards.active : cards.vault).push(card);
+    });
+    return cards;
+}
+
+function openVaultModal(doc) {
+    const existingModal = doc.getElementById('dh-vault-modal');
+    if (existingModal) existingModal.remove();
+
+    const modalOverlay = doc.createElement('div');
+    modalOverlay.id = 'dh-vault-modal';
+    modalOverlay.className = 'dh-modal-overlay';
+    modalOverlay.innerHTML = `
+        <div class="dh-modal-box dh-vault-modal-box">
+            <h3 class="dh-modal-title">🗃️ Reserva de Cartas de Domínio</h3>
+            <div style="font-size: 0.85em; color: #cbd5e0;">Clique numa carta para movê-la entre as cartas ativas e a reserva.</div>
+            <div class="dh-vault-columns">
+                <div class="dh-vault-column">
+                    <div class="dh-vault-column-title">Ativas <span id="dh-vault-active-count"></span></div>
+                    <div class="dh-vault-list" id="dh-vault-active-list"></div>
+                </div>
+                <div class="dh-vault-column">
+                    <div class="dh-vault-column-title">Reserva <span id="dh-vault-vault-count"></span></div>
+                    <div class="dh-vault-list" id="dh-vault-vault-list"></div>
+                </div>
+            </div>
+            <div id="dh-vault-status" style="font-size: 0.84em; color: #f1c40f; font-weight: bold; min-height: 20px;"></div>
+            <div class="dh-modal-actions">
+                <button type="button" class="dh-modal-btn dh-modal-btn-cancel" id="dh-vault-close-btn">Fechar</button>
+            </div>
+        </div>
+    `;
+    doc.body.appendChild(modalOverlay);
+
+    const statusElem = modalOverlay.querySelector('#dh-vault-status');
+    let cards = collectDomainAndVaultCards(doc);
+    let pendingMoves = 0;
+    let moveQueue = Promise.resolve();
+
+    const renderList = (listId, countId, list, emptyText) => {
+        const listElem = modalOverlay.querySelector(listId);
+        modalOverlay.querySelector(countId).innerText = `(${list.length})`;
+        listElem.innerHTML = list.length
+            ? list.map(card => `<div class="dh-vault-card" data-card-fullname="${card.rawName}">${card.name}</div>`).join('')
+            : `<div class="dh-vault-empty">${emptyText}</div>`;
+    };
+
+    const render = () => {
+        renderList('#dh-vault-active-list', '#dh-vault-active-count', cards.active, 'Nenhuma carta ativa.');
+        renderList('#dh-vault-vault-list', '#dh-vault-vault-count', cards.vault, 'Reserva vazia.');
+        statusElem.innerText = pendingMoves > 0 ? `Movendo cartas no Roll20 (${pendingMoves})...` : '';
+    };
+
+    const moveCard = (rawName) => {
+        const fromActive = rawName.toLowerCase().startsWith('dom_');
+        const fromList = fromActive ? cards.active : cards.vault;
+        const toList = fromActive ? cards.vault : cards.active;
+        const idx = fromList.findIndex(c => c.rawName === rawName);
+        if (idx === -1) return;
+
+        // Atualiza a interface na hora; o Roll20 é atualizado em fila
+        const [card] = fromList.splice(idx, 1);
+        const newRawName = (fromActive ? 'vau_' : 'dom_') + rawName.substring(4);
+        toList.push({ ...card, rawName: newRawName });
+        pendingMoves++;
+        render();
+
+        moveQueue = moveQueue.then(async () => {
+            const ok = await renameAbilityInRoll20(doc, rawName, newRawName);
+            if (!ok) console.error(`Não foi possível mover a carta "${rawName}".`);
+            pendingMoves--;
+            // Ao terminar a fila, sincroniza com o que realmente está no Roll20
+            if (pendingMoves === 0 && doc.body.contains(modalOverlay)) {
+                cards = collectDomainAndVaultCards(doc);
+            }
+            if (doc.body.contains(modalOverlay)) render();
+        });
+    };
+
+    const columnsElem = modalOverlay.querySelector('.dh-vault-columns');
+    attachCardTooltip(doc, columnsElem, '.dh-vault-card', (cardElem) => {
+        const rawName = cardElem.getAttribute('data-card-fullname');
+        const card = [...cards.active, ...cards.vault].find(c => c.rawName === rawName);
+        if (!card) return '';
+        return `
+            <div class="dh-domain-card">
+                <div class="dh-domain-header">
+                    <span>Nível: ${card.nivel}</span>
+                    <span>Custo: ${card.custo}</span>
+                </div>
+                <div class="dh-domain-name">${card.name}</div>
+                <div class="dh-domain-desc">${card.desc}</div>
+            </div>
+        `;
+    });
+    columnsElem.addEventListener('click', (e) => {
+        const cardElem = e.target.closest('.dh-vault-card');
+        if (cardElem) moveCard(cardElem.getAttribute('data-card-fullname'));
+    });
+    modalOverlay.querySelector('#dh-vault-close-btn').addEventListener('click', () => {
+        hideCardTooltip(doc);
+        modalOverlay.remove();
+    });
+
+    render();
+}
+
+function openSettingsModal(doc) {
+    const existingModal = doc.getElementById('dh-settings-modal');
+    if (existingModal) existingModal.remove();
+
+    const settings = getPinkDaggerSettings();
+    const modalOverlay = doc.createElement('div');
+    modalOverlay.id = 'dh-settings-modal';
+    modalOverlay.className = 'dh-modal-overlay';
+    modalOverlay.innerHTML = `
+        <div class="dh-modal-box">
+            <h3 class="dh-modal-title">⚙️ Configurações</h3>
+            <div class="dh-settings-group">
+                <div class="dh-settings-label">Visualização dos cards</div>
+                <div class="dh-settings-hint">Personagem: Ancestralidade, Comunidade, Classe, Subclasse, Esperança, Armas e Cartas de Domínio. NPC: Habilidades.</div>
+                <label class="dh-settings-option">
+                    <input type="radio" name="dh-card-view" value="detailed" ${settings.cardView === 'detailed' ? 'checked' : ''}>
+                    <span><strong>Detalhado</strong><small>Mostra todas as informações direto no card.</small></span>
+                </label>
+                <label class="dh-settings-option">
+                    <input type="radio" name="dh-card-view" value="simple" ${settings.cardView === 'simple' ? 'checked' : ''}>
+                    <span><strong>Simplificado</strong><small>Mostra só o nome; o card completo aparece ao passar o mouse.</small></span>
+                </label>
+            </div>
+            <div class="dh-modal-actions">
+                <button type="button" class="dh-modal-btn dh-modal-btn-cancel" id="dh-settings-close-btn">Fechar</button>
+            </div>
+        </div>
+    `;
+    doc.body.appendChild(modalOverlay);
+
+    modalOverlay.querySelectorAll('input[name="dh-card-view"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            savePinkDaggerSettings({ cardView: radio.value });
+            populateDaggerheartData(doc);
+        });
+    });
+    modalOverlay.querySelector('#dh-settings-close-btn').addEventListener('click', () => modalOverlay.remove());
+}
