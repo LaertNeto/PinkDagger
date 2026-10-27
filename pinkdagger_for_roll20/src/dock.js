@@ -207,9 +207,18 @@ function dockSheet(doc) {
     applyDockSize(dialog, loadDockSize(topDoc.defaultView));
     updateDockPosition(dialog);
     dialog.classList.add('pd-docked');
-    // A barra lateral pode ser recolhida ou redimensionada a qualquer momento
+    // A barra lateral pode ser recolhida ou redimensionada a qualquer momento.
+    // O timer se encerra sozinho ao desafixar: quem desafixa pode ser o script de outra ficha
+    // (outro iframe), que não enxerga nem consegue limpar o timer deste
     clearInterval(dialog._pdDockPositionTimer);
-    dialog._pdDockPositionTimer = setInterval(() => updateDockPosition(dialog), 500);
+    const positionTimer = setInterval(() => {
+        if (!dialog.isConnected || !dialog.classList.contains('pd-docked')) {
+            clearInterval(positionTimer);
+            return;
+        }
+        updateDockPosition(dialog);
+    }, 500);
+    dialog._pdDockPositionTimer = positionTimer;
     if (!dialog.querySelector('.pd-dock-resize')) setupDockResize(dialog);
 
     doc.body.classList.add('dh-docked');

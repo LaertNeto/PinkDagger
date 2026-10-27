@@ -10,7 +10,8 @@ const MACRO_TEMPLATES = {
     exp: `&{template:default} {{name=Nome da Experiência\n}} {{Modificador=+2\n}}`,
     inv: `Itens:`,
     ataque: `&{template:default} {{name=Ataque\n}} {{Ataque=[[d20+@{atq}]]\n}} {{Dano=[[@{dano}]] @{tipo_dano}\n}}`,
-    hab: `&{template:default} {{name=Nome da Habilidade\n}} {{Efeito=O que a habilidade faz.\n}}`
+    hab: `&{template:default} {{name=Nome da Habilidade\n}} {{Efeito=O que a habilidade faz.\n}}`,
+    companion_attack: `&{template:default} {{name=Nome do Ataque\n}} {{Ataque=[[d20+@{atq}]]\n}} {{dano=[[@{proficiência}d6]]\n}}`
 };
 
 // Macros da ficha de Medo (executadas após alterar o atributo, por isso o valor antigo é calculado a partir do novo)

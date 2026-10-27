@@ -1706,6 +1706,7 @@ body.dh-docked .dh-container {
     background: #E85D9E;
     color: #12141c;
     border: none;
+    font-family: inherit;
     font-weight: 800;
     font-size: 0.85em;
     padding: 8px 18px;
@@ -1720,4 +1721,130 @@ body.dh-docked .dh-container {
 .dh-choice-card:hover .dh-choice-action-btn {
     background: #ff75b5;
     transform: scale(1.02);
+}
+
+/* Tipos de ficha secundários, escondidos sob "Outros tipos de ficha" */
+.dh-choice-more {
+    margin: 22px auto 0;
+    max-width: 700px;
+    width: 100%;
+}
+
+.dh-choice-more summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    list-style: none;
+    background: #1b1f2b;
+    border: 1px dashed #E85D9E;
+    color: #E85D9E;
+    border-radius: 4px;
+    padding: 6px 14px;
+    font-size: 0.8em;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.dh-choice-more summary::-webkit-details-marker {
+    display: none;
+}
+
+.dh-choice-more summary::before {
+    content: '▸';
+    font-size: 1.1em;
+    line-height: 1;
+    transition: transform 0.2s ease;
+}
+
+.dh-choice-more[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.dh-choice-more summary:hover,
+.dh-choice-more[open] summary {
+    background: #E85D9E;
+    color: #12141c;
+    border-style: solid;
+}
+
+.dh-choice-more-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.dh-choice-more-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin: 0;
+    padding: 12px 14px;
+    background: #1b1f2b;
+    border: 2px solid #3c4252;
+    border-radius: 8px;
+    color: #cbd5e0;
+    font-family: inherit;
+    font-size: 1em;
+    text-align: left;
+    cursor: pointer;
+    box-sizing: border-box;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: all 0.25s ease;
+}
+
+.dh-choice-more-btn:hover {
+    border-color: #E85D9E;
+    background: #232838;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(232, 93, 158, 0.25);
+}
+
+.dh-choice-more-icon {
+    font-size: 1.8rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.dh-choice-more-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.dh-choice-more-text strong {
+    font-size: 0.9em;
+    font-weight: 800;
+    color: #f1c40f;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dh-choice-more-text small {
+    font-size: 0.78em;
+    color: #a0aec0;
+    line-height: 1.4;
+}
+
+/* Ficha de Companheiro Animal */
+.dh-companion-stats-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dh-companion-stats-col > .dh-stat-box {
+    flex-grow: 1;
+}
+
+.dh-companion-attack-card {
+    width: 100%;
+    box-sizing: border-box;
+    cursor: pointer;
 }

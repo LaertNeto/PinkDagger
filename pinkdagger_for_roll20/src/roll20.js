@@ -82,7 +82,7 @@ function createAttributeMacroInRoll20(doc, attrName, callback) {
     }, 150);
 }
 
-function addNewMacroToRoll20(doc, prefix, promptMessage, customFullName = null) {
+function addNewMacroToRoll20(doc, prefix, promptMessage, customFullName = null, templateKey = prefix) {
     const navTabs = doc.querySelector('.nav.nav-tabs');
     if (!navTabs) return;
 
@@ -136,7 +136,6 @@ function addNewMacroToRoll20(doc, prefix, promptMessage, customFullName = null) 
                     }
 
                     if (macroTextarea) {
-                        let templateKey = prefix;
                         let defaultTemplate = MACRO_TEMPLATES[templateKey] || MACRO_TEMPLATES.exp;
                         let customizedTemplate = defaultTemplate.replace(/\{\{name=[^\n\}]*/, `{{name=${cleanName}`);
 
@@ -312,6 +311,126 @@ async function renameAbilityInRoll20(doc, oldName, newName) {
     if (pinkDaggerNav) pinkDaggerNav.click();
     populateDaggerheartData(doc);
     return renamed;
+}
+
+async function createAttributeRowInRoll20(doc, attrName, value) {
+    const addAttribBtn = doc.querySelector('.attributesabilities .addattrib') || doc.querySelector('.addattrib');
+    if (!addAttribBtn) return;
+    addAttribBtn.click();
+    await delay(150);
+
+    const attribs = doc.querySelectorAll('.attributesabilities .attributes .attrib');
+    const newAttrib = attribs[attribs.length - 1];
+    if (!newAttrib) return;
+
+    const nameInput = newAttrib.querySelector('.attrname input') || newAttrib.querySelector('.attrname');
+    if (nameInput) {
+        if (nameInput.tagName.toLowerCase() === 'input') nameInput.value = attrName;
+        else nameInput.innerText = attrName;
+        nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+        nameInput.dispatchEvent(new Event('change', { bubbles: true }));
+        nameInput.dispatchEvent(new Event('blur', { bubbles: true }));
+    }
+    const currentInput = newAttrib.querySelector('.current input');
+    if (currentInput) updateOriginalInput(currentInput, value);
+}
+
+// Ataque do NPC: grava os valores nos atributos (criando os que faltam) e reescreve a macro
+// de ataque para referenciá-los, mantendo os campos extras que já existiam nela
+async function saveNpcAttackToRoll20(doc, attackMacroName, attackData) {
+    const navTabs = doc.querySelector('.nav.nav-tabs');
+    const attrTabNav = navTabs?.querySelector('a[data-tab="attributesabilities"]');
+    const pinkDaggerNav = navTabs?.querySelector('a[data-tab="daggerheart"]');
+    if (!attrTabNav) return;
+
+    attrTabNav.click();
+    await delay(200);
+
+    const refs = {};
+    for (const key of ['nome_ataque', 'atq', 'alcance', 'dano', 'tipo_dano']) {
+        const field = attackData[key];
+        const input = findAttributeInput(doc, [field.attrName.toLowerCase()]);
+        if (input) {
+            updateOriginalInput(input, field.value);
+        } else {
+            await createAttributeRowInRoll20(doc, field.attrName, field.value);
+        }
+        refs[key] = field.attrName;
+    }
+
+    const abil = findAbilityElementByName(doc, attackMacroName);
+    if (abil) {
+        const editBtn = abil.querySelector('.editabil');
+        if (editBtn) editBtn.click();
+        await delay(150);
+
+        const macroTextarea = abil.querySelector('textarea.action') || abil.querySelector('textarea');
+        if (macroTextarea) {
+            const replacedKeys = ['ataque', 'alcance', 'dano', 'damage'];
+            const extraFields = extractMacroFieldsList(macroTextarea.value)
+                .filter(f => !f.isName && !replacedKeys.includes(f.key.toLowerCase()));
+
+            let action = `&{template:default} {{name=@{${refs.nome_ataque}}\n}} {{Ataque=[[d20+@{${refs.atq}}]]\n}} {{Alcance=@{${refs.alcance}}\n}} {{Dano=[[@{${refs.dano}}]] @{${refs.tipo_dano}}\n}}`;
+            extraFields.forEach(f => {
+                action += ` {{${f.key}=${f.value}\n}}`;
+            });
+            updateOriginalInput(macroTextarea, action);
+        }
+
+        const saveBtn = abil.querySelector('.saveabil');
+        if (saveBtn) saveBtn.click();
+        await delay(150);
+    }
+
+    if (pinkDaggerNav) pinkDaggerNav.click();
+    populateDaggerheartData(doc);
+}
+
+// Ataque do companheiro: grava o bônus no atributo Atq (criando se faltar) e reescreve a macro wea_,
+// mantendo os campos extras que já existiam nela
+async function saveCompanionAttackToRoll20(doc, attackMacroName, attackData) {
+    const navTabs = doc.querySelector('.nav.nav-tabs');
+    const attrTabNav = navTabs?.querySelector('a[data-tab="attributesabilities"]');
+    const pinkDaggerNav = navTabs?.querySelector('a[data-tab="daggerheart"]');
+    if (!attrTabNav) return;
+
+    attrTabNav.click();
+    await delay(200);
+
+    const atqInput = findAttributeInput(doc, [attackData.atqAttrName.toLowerCase()]);
+    if (atqInput) {
+        updateOriginalInput(atqInput, attackData.atq);
+    } else {
+        await createAttributeRowInRoll20(doc, attackData.atqAttrName, attackData.atq);
+    }
+
+    const abil = findAbilityElementByName(doc, attackMacroName);
+    if (abil) {
+        const editBtn = abil.querySelector('.editabil');
+        if (editBtn) editBtn.click();
+        await delay(150);
+
+        const macroTextarea = abil.querySelector('textarea.action') || abil.querySelector('textarea');
+        if (macroTextarea) {
+            const replacedKeys = ['ataque', 'dano', 'damage', 'desc', 'descrição', 'descricao'];
+            const extraFields = extractMacroFieldsList(macroTextarea.value)
+                .filter(f => !f.isName && !replacedKeys.includes(f.key.toLowerCase()));
+
+            let action = `&{template:default} {{name=${attackData.title}\n}} {{Ataque=[[d20+@{${attackData.atqAttrName}}]]\n}} {{dano=${attackData.damageRaw}\n}}`;
+            if (attackData.desc) action += ` {{desc=${attackData.desc}\n}}`;
+            extraFields.forEach(f => {
+                action += ` {{${f.key}=${f.value}\n}}`;
+            });
+            updateOriginalInput(macroTextarea, action);
+        }
+
+        const saveBtn = abil.querySelector('.saveabil');
+        if (saveBtn) saveBtn.click();
+        await delay(150);
+    }
+
+    if (pinkDaggerNav) pinkDaggerNav.click();
+    populateDaggerheartData(doc);
 }
 
 function abilityExistsInRoll20(doc, abilName) {

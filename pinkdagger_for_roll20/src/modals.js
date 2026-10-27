@@ -133,6 +133,115 @@ function saveWeaponChanges(doc, abilIdx, rawName, newTrait, newDamage, newDesc) 
     }, 150);
 }
 
+// attackData: { nome_ataque, atq, alcance, dano, tipo_dano }, cada um { attrName, value }
+function openEditNpcAttackModal(doc, attackMacroName, attackData) {
+    const existingModal = doc.getElementById('dh-npc-attack-edit-modal');
+    if (existingModal) existingModal.remove();
+
+    const modalOverlay = doc.createElement('div');
+    modalOverlay.id = 'dh-npc-attack-edit-modal';
+    modalOverlay.className = 'dh-modal-overlay';
+
+    const fieldDefs = [
+        { key: 'nome_ataque', label: 'Nome do Ataque:', placeholder: 'Ex: Garras' },
+        { key: 'atq', label: 'Bônus de Ataque:', placeholder: 'Ex: 3' },
+        { key: 'alcance', label: 'Alcance:', placeholder: 'Ex: corpo a corpo' },
+        { key: 'dano', label: 'Dano:', placeholder: 'Ex: 2d8+3' },
+        { key: 'tipo_dano', label: 'Tipo de Dano:', placeholder: 'Ex: fís ou mag' }
+    ];
+    const escapeAttr = (val) => String(val ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+
+    const fieldsHTML = fieldDefs.map(def => `
+        <div class="dh-modal-field">
+            <label>${def.label}</label>
+            <input type="text" class="dh-modal-input" data-attack-field="${def.key}" value="${escapeAttr(attackData[def.key].value)}" placeholder="${def.placeholder}">
+        </div>
+    `).join('');
+
+    modalOverlay.innerHTML = `
+        <div class="dh-modal-box">
+            <h3 class="dh-modal-title">Editar Ataque: ${attackData.nome_ataque.value || 'Ataque'}</h3>
+            ${fieldsHTML}
+            <div class="dh-modal-actions">
+                <button type="button" class="dh-modal-btn dh-modal-btn-cancel" id="dh-edit-attack-cancel">Cancelar</button>
+                <button type="button" class="dh-modal-btn dh-modal-btn-save" id="dh-edit-attack-save">Salvar</button>
+            </div>
+        </div>
+    `;
+
+    doc.body.appendChild(modalOverlay);
+
+    const closeModal = () => modalOverlay.remove();
+
+    modalOverlay.querySelector('#dh-edit-attack-cancel').addEventListener('click', closeModal);
+
+    modalOverlay.querySelector('#dh-edit-attack-save').addEventListener('click', () => {
+        const updated = {};
+        fieldDefs.forEach(def => {
+            const input = modalOverlay.querySelector(`[data-attack-field="${def.key}"]`);
+            updated[def.key] = { attrName: attackData[def.key].attrName, value: input.value.trim() };
+        });
+        closeModal();
+        saveNpcAttackToRoll20(doc, attackMacroName, updated);
+    });
+}
+
+// attackData: { title, atq, atqAttrName, damageRaw, desc }
+function openEditCompanionAttackModal(doc, attackMacroName, attackData) {
+    const existingModal = doc.getElementById('dh-companion-attack-edit-modal');
+    if (existingModal) existingModal.remove();
+
+    const modalOverlay = doc.createElement('div');
+    modalOverlay.id = 'dh-companion-attack-edit-modal';
+    modalOverlay.className = 'dh-modal-overlay';
+
+    const escapeAttr = (val) => String(val ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+
+    modalOverlay.innerHTML = `
+        <div class="dh-modal-box">
+            <h3 class="dh-modal-title">Editar Ataque: ${attackData.title || 'Ataque'}</h3>
+            <div class="dh-modal-field">
+                <label>Nome do Ataque:</label>
+                <input type="text" class="dh-modal-input" id="dh-edit-companion-title" value="${escapeAttr(attackData.title)}" placeholder="Ex: Mordida">
+            </div>
+            <div class="dh-modal-field">
+                <label>Bônus de Ataque (Atq):</label>
+                <input type="text" class="dh-modal-input" id="dh-edit-companion-atq" value="${escapeAttr(attackData.atq)}" placeholder="Ex: 2">
+            </div>
+            <div class="dh-modal-field">
+                <label>Fórmula de Dano:</label>
+                <input type="text" class="dh-modal-input" id="dh-edit-companion-damage" value="${escapeAttr(attackData.damageRaw)}" placeholder="Ex: [[@{proficiência}d6]]">
+            </div>
+            <div class="dh-modal-field">
+                <label>Descrição / Efeito:</label>
+                <textarea class="dh-modal-textarea" id="dh-edit-companion-desc" placeholder="Ex: Alcance corpo a corpo...">${attackData.desc || ''}</textarea>
+            </div>
+            <div class="dh-modal-actions">
+                <button type="button" class="dh-modal-btn dh-modal-btn-cancel" id="dh-edit-companion-cancel">Cancelar</button>
+                <button type="button" class="dh-modal-btn dh-modal-btn-save" id="dh-edit-companion-save">Salvar</button>
+            </div>
+        </div>
+    `;
+
+    doc.body.appendChild(modalOverlay);
+
+    const closeModal = () => modalOverlay.remove();
+
+    modalOverlay.querySelector('#dh-edit-companion-cancel').addEventListener('click', closeModal);
+
+    modalOverlay.querySelector('#dh-edit-companion-save').addEventListener('click', () => {
+        const updated = {
+            title: modalOverlay.querySelector('#dh-edit-companion-title').value.trim() || attackData.title,
+            atq: modalOverlay.querySelector('#dh-edit-companion-atq').value.trim() || '0',
+            atqAttrName: attackData.atqAttrName,
+            damageRaw: modalOverlay.querySelector('#dh-edit-companion-damage').value.trim(),
+            desc: modalOverlay.querySelector('#dh-edit-companion-desc').value.trim()
+        };
+        closeModal();
+        saveCompanionAttackToRoll20(doc, attackMacroName, updated);
+    });
+}
+
 function handleCardEditClick(doc, btn, abilityElements) {
     const abilIdx = parseInt(btn.getAttribute('data-abil-idx'), 10);
     const rawName = btn.getAttribute('data-card-fullname');
@@ -674,7 +783,7 @@ function openSettingsModal(doc) {
             <h3 class="dh-modal-title">⚙️ Configurações</h3>
             <div class="dh-settings-group">
                 <div class="dh-settings-label">Visualização dos cards</div>
-                <div class="dh-settings-hint">Personagem: Ancestralidade, Comunidade, Classe, Subclasse, Esperança, Armas e Cartas de Domínio. NPC: Habilidades.</div>
+                <div class="dh-settings-hint">Personagem: Ancestralidade, Comunidade, Classe, Subclasse, Esperança, Armas e Cartas de Domínio. Companheiro e NPC: Habilidades.</div>
                 <label class="dh-settings-option">
                     <input type="radio" name="dh-card-view" value="detailed" ${settings.cardView === 'detailed' ? 'checked' : ''}>
                     <span><strong>Detalhado</strong><small>Mostra todas as informações direto no card.</small></span>

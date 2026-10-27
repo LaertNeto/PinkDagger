@@ -194,6 +194,7 @@ function populateDaggerheartData(doc) {
     let isNpc = false;
     let isPc = false;
     let isFear = false;
+    let isCompanion = false;
     let medoStats = { val: 0, max: null, input: null, attrName: 'medo', exists: false };
     let npcStats = { 
         dificuldade: { val: '-', exists: false }, 
@@ -252,6 +253,8 @@ function populateDaggerheartData(doc) {
             isPc = true;
         } else if (lowerName === 'pinkdagger_fear') {
             isFear = true;
+        } else if (lowerName === 'pinkdagger_companion') {
+            isCompanion = true;
         } else if (lowerName === 'medo') {
             medoStats = {
                 val: parseInt(currentVal, 10) || 0,
@@ -270,15 +273,15 @@ function populateDaggerheartData(doc) {
                 if (!defenses.maior) defenses.maior = { val: parts[1].trim(), exists: true };
             }
         } else if (lowerName === 'atq' || lowerName === 'ataque') {
-            npcStats.atq = { val: currentVal, exists: true };
+            npcStats.atq = { val: currentVal, exists: true, attrName: name };
         } else if (lowerName === 'nome_ataque' || lowerName === 'nome-ataque' || lowerName === 'nome ataque' || lowerName === 'arma' || lowerName === 'nome_arma') {
-            npcStats.nome_ataque = { val: currentVal, exists: true };
+            npcStats.nome_ataque = { val: currentVal, exists: true, attrName: name };
         } else if (lowerName === 'alcance') {
-            npcStats.alcance = { val: currentVal, exists: true };
+            npcStats.alcance = { val: currentVal, exists: true, attrName: name };
         } else if (lowerName === 'dano') {
-            npcStats.dano = { val: currentVal, exists: true };
+            npcStats.dano = { val: currentVal, exists: true, attrName: name };
         } else if (lowerName === 'tipo_dano' || lowerName === 'tipo-dano' || lowerName === 'tipo de dano' || lowerName === 'tipo do dano' || lowerName === 'dano_tipo') {
-            npcStats.tipo_dano = { val: currentVal, exists: true };
+            npcStats.tipo_dano = { val: currentVal, exists: true, attrName: name };
         } else if (lowerName === 'tipo') {
             npcStats.tipo = { val: currentVal, exists: true };
         } else if (lowerName === 'tier') {
@@ -295,6 +298,17 @@ function populateDaggerheartData(doc) {
     // ========== FEAR SHEET RENDERING ==========
     if (isFear) {
         renderFearSheet(doc, root, medoStats);
+        return;
+    }
+
+    // ========== COMPANION SHEET RENDERING ==========
+    if (isCompanion) {
+        renderCompanionSheet(doc, root, {
+            profVal,
+            evasao: defenses.evasao,
+            fadiga: trackersMap['fadiga'],
+            atq: npcStats.atq
+        });
         return;
     }
 
@@ -368,9 +382,10 @@ function populateDaggerheartData(doc) {
         let expCardsHTML = '';
         let expCount = 0;
         let attackMacroFullName = null;
+        let attackEditData = null;
 
         if (abilityElements.length > 0) {
-            abilityElements.forEach((abil) => {
+            abilityElements.forEach((abil, abilIdx) => {
                 const nameElem = abil.querySelector('.abilname');
                 const rawName = nameElem?.innerText?.trim() || (abil.querySelector('.abilname input')?.value?.trim() || '');
                 const lowerName = rawName.toLowerCase();
@@ -434,6 +449,15 @@ function populateDaggerheartData(doc) {
                         atqTagHTML = `<button class="dh-add-missing-btn" data-missing-npc-attr="atq" data-default="10" title="Adicionar Atributo Atq">+ Atq</button>`;
                     }
 
+                    // Valores atuais para o modal de edição (atributos que faltam são criados com o nome padrão)
+                    attackEditData = {
+                        nome_ataque: { attrName: npcStats.nome_ataque.attrName || 'Nome_Ataque', value: npcStats.nome_ataque.exists ? npcStats.nome_ataque.val : attackTitle },
+                        atq: { attrName: npcStats.atq.attrName || 'Atq', value: npcStats.atq.exists ? npcStats.atq.val : '' },
+                        alcance: { attrName: npcStats.alcance.attrName || 'Alcance', value: npcStats.alcance.exists ? npcStats.alcance.val : resolvedAlcance },
+                        dano: { attrName: npcStats.dano.attrName || 'Dano', value: npcStats.dano.exists ? npcStats.dano.val : resolvedDamage },
+                        tipo_dano: { attrName: npcStats.tipo_dano.attrName || 'Tipo_Dano', value: npcStats.tipo_dano.exists ? npcStats.tipo_dano.val : '' }
+                    };
+
                     attackCardHTML = `
                         <div class="dh-weapon-card dh-npc-weapon-card" data-card-fullname="${rawName}">
                             <div class="dh-weapon-header">
@@ -441,6 +465,7 @@ function populateDaggerheartData(doc) {
                                 <div style="display: flex; gap: 6px; align-items: center;">
                                     ${damageTagHTML}
                                     ${atqTagHTML}
+                                    <button class="dh-weapon-edit-btn" id="dh-npc-attack-edit" title="Editar Ataque">✏️</button>
                                 </div>
                             </div>
                             <div class="dh-weapon-title">⚔️ ${attackTitle}</div>
@@ -476,7 +501,10 @@ function populateDaggerheartData(doc) {
 
                     abilityCardsHTML += `
                         <div class="dh-heritage-card dh-npc-ability-card" data-card-fullname="${rawName}">
-                            <div class="dh-heritage-tag">HABILIDADE</div>
+                            <div class="dh-card-header">
+                                <div class="dh-heritage-tag">HABILIDADE</div>
+                                <button class="dh-card-edit-btn" data-abil-idx="${abilIdx}" data-card-fullname="${rawName}" data-card-type="Habilidade" title="Editar Habilidade">✏️</button>
+                            </div>
                             <div class="dh-heritage-title">${cardTitle}</div>
                             ${effectsHTML || '<div class="dh-heritage-effect">Sem descrição informada.</div>'}
                         </div>
@@ -579,6 +607,12 @@ function populateDaggerheartData(doc) {
                 const fullName = npcWeaponCard.getAttribute('data-card-fullname');
                 triggerRollForAbilityName(doc, fullName);
             });
+
+            npcWeaponCard.querySelector('#dh-npc-attack-edit')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openEditNpcAttackModal(doc, attackMacroFullName, attackEditData);
+            });
         }
 
         // Rolagem de experiências
@@ -599,6 +633,14 @@ function populateDaggerheartData(doc) {
                 card.addEventListener('click', () => {
                     const fullName = card.getAttribute('data-card-fullname');
                     triggerRollForAbilityName(doc, fullName);
+                });
+            });
+
+            npcAbilitiesContainer.querySelectorAll('.dh-card-edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleCardEditClick(doc, btn, abilityElements);
                 });
             });
         }
@@ -693,11 +735,36 @@ function populateDaggerheartData(doc) {
                         <button type="button" class="dh-choice-action-btn">Criar como Monstro (NPC)</button>
                     </div>
                 </div>
+                <details class="dh-choice-more">
+                    <summary>Outros tipos de ficha</summary>
+                    <div class="dh-choice-more-list">
+                        <button type="button" class="dh-choice-more-btn" data-sheet-type="pinkdagger_companion">
+                            <span class="dh-choice-more-icon">🐾</span>
+                            <span class="dh-choice-more-text">
+                                <strong>Companheiro Animal</strong>
+                                <small>Proficiência, Evasão, Fadiga, um Ataque, Experiências e Habilidades.</small>
+                            </span>
+                        </button>
+                        <button type="button" class="dh-choice-more-btn" data-sheet-type="pinkdagger_fear">
+                            <span class="dh-choice-more-icon">😱</span>
+                            <span class="dh-choice-more-text">
+                                <strong>Medo (Mestre)</strong>
+                                <small>Contador de Medo com botões −/+ que anunciam a mudança no chat.</small>
+                            </span>
+                        </button>
+                    </div>
+                </details>
             </div>
         `;
 
         root.querySelector('#dh-choose-pc-card')?.addEventListener('click', () => {
             addNewAttributeToRoll20(doc, 'pinkdagger_pc', null, '1', false, false, true);
+        });
+
+        root.querySelectorAll('.dh-choice-more-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                addNewAttributeToRoll20(doc, btn.getAttribute('data-sheet-type'), null, '1', false, false, true);
+            });
         });
 
         root.querySelector('#dh-choose-npc-card')?.addEventListener('click', () => {
@@ -717,6 +784,7 @@ function populateDaggerheartData(doc) {
     const profElem = doc.getElementById('dh-char-prof');
 
     if (nivelElem) {
+        nivelElem.parentElement.style.display = ''; // a ficha de companheiro esconde o Nível
         if (nivelVal !== null) {
             nivelElem.innerText = nivelVal;
         } else {
