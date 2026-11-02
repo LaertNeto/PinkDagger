@@ -32,6 +32,39 @@ function setupMoneyControl(doc, root, key, moneyObj, possibleNames) {
     }
 }
 
+// Caixa de texto ligada ao conteúdo inteiro de uma macro (Inventário e macros txt_)
+function setupMacroTextarea(doc, textarea, macroName, originalField) {
+    // Busca a macro novamente: o Roll20 recria a linha ao salvar e a referência antiga fica solta
+    const findAbil = () => findAbilityElementByName(doc, macroName);
+    const findField = (abil) => abil?.querySelector('textarea, input[name*="action"]') || originalField;
+
+    textarea.addEventListener('input', () => {
+        updateOriginalInput(findField(findAbil()), textarea.value);
+    });
+
+    // Salva só ao sair do campo: salvar a cada tecla recriaria a linha da macro sem necessidade
+    textarea.addEventListener('change', () => {
+        const abil = findAbil();
+        updateOriginalInput(findField(abil), textarea.value);
+        const saveBtn = abil?.querySelector('.saveabil');
+        if (saveBtn) saveBtn.click();
+    });
+
+    const savedHeight = getSavedTextareaHeight(doc, macroName);
+    if (savedHeight) textarea.style.height = `${savedHeight}px`;
+
+    // Só grava com o mouse pressionado na caixa: a troca de aba também muda o tamanho (0 quando oculta)
+    let pressed = false;
+    textarea.addEventListener('mousedown', () => { pressed = true; });
+    textarea.addEventListener('mouseup', () => { pressed = false; });
+    new ResizeObserver(() => {
+        const height = textarea.offsetHeight;
+        if (pressed && height > 0 && height !== getSavedTextareaHeight(doc, macroName)) {
+            saveTextareaHeight(doc, macroName, height);
+        }
+    }).observe(textarea);
+}
+
 function findAttributeInput(doc, possibleNames) {
     const attributeElements = doc.querySelectorAll('.attributesabilities .attributes .attrib');
     for (let i = 0; i < attributeElements.length; i++) {
@@ -924,6 +957,7 @@ function populateDaggerheartData(doc) {
     let inventoryText = '';
     let inventoryTextareaElem = null;
     let inventoryMacroName = null;
+    let textMacros = [];
 
     if (abilityElements.length > 0) {
         abilityElements.forEach((abil, abilIdx) => {
@@ -1106,6 +1140,9 @@ function populateDaggerheartData(doc) {
                 `;
             } else if (lowerName.startsWith('vau_')) {
                 // Cartas na reserva só aparecem no modal da Reserva
+            } else if (lowerName.startsWith('txt_')) {
+                const field = abil.querySelector('textarea, input[name*="action"]');
+                textMacros.push({ rawName, title: rawName.substring(4).trim(), text: field ? field.value : '', field });
             } else if (!fixedTraits.includes(lowerName) && rawName !== '') {
                 validAbilitiesCount++;
                 generalAbilitiesHTML += `<li class="dh-ability-item" data-card-fullname="${rawName}"><span>${rawName}</span></li>`;
@@ -1243,26 +1280,68 @@ function populateDaggerheartData(doc) {
     }
     generalAbilitiesHTML += '</ul>';
 
-    root.innerHTML = traitsHTML + statsHTML + defensesHTML + customStatsHTML + finalHeritageHTML + finalClassHTML + finalWeaponsHTML + finalDomainsHTML + inventoryHTML + generalAbilitiesHTML + finalLevelHTML;
+    const textMacrosHTML = textMacros.map(textMacro => `
+        <div class="dh-inventory-textbox">
+            <span class="dh-inventory-label">${escapeHtml(textMacro.title)}</span>
+            <textarea class="dh-inventory-textarea dh-text-macro-textarea" placeholder="Digite o texto aqui...">${escapeHtml(textMacro.text)}</textarea>
+        </div>
+    `).join('');
+
+    const textsHTML = `
+        <div class="dh-section-title">
+            <span>Textos</span>
+            <button class="dh-add-btn" id="dh-add-txt" title="Adicionar Texto">+</button>
+        </div>
+        <div class="dh-text-list">
+            ${textMacrosHTML || '<span style="color: #718096; font-size: 0.8em;">Nenhum texto cadastrado.</span>'}
+        </div>
+    `;
+
+    // A aba ativa fica guardada no root para sobreviver aos re-renders da ficha
+    const activeTab = root.dataset.activeTab || 'ficha';
+    const getTabHTML = (tab, label) => `<button type="button" class="dh-sheet-tab${activeTab === tab ? ' dh-sheet-tab--active' : ''}" data-sheet-tab="${tab}">${label}</button>`;
+    const getPanelHTML = (tab, content) => `<div class="dh-sheet-panel${activeTab === tab ? ' dh-sheet-panel--active' : ''}" data-sheet-panel="${tab}">${content}</div>`;
+
+    root.innerHTML = `<div class="dh-sheet-tabs">${getTabHTML('ficha', 'Ficha')}${getTabHTML('textos', 'Textos')}</div>`
+        + getPanelHTML('ficha', traitsHTML + statsHTML + defensesHTML + customStatsHTML + finalHeritageHTML + finalClassHTML + finalWeaponsHTML + finalDomainsHTML + inventoryHTML + generalAbilitiesHTML + finalLevelHTML)
+        + getPanelHTML('textos', textsHTML);
 
     applySimpleCardView(doc, root, ['#dh-heritage-container', '#dh-class-container', '#dh-weapons-container', '#dh-domains-container']);
 
     const invTextarea = root.querySelector('#dh-inv-text');
     if (invTextarea && inventoryTextareaElem) {
-        // Busca a macro novamente: o Roll20 recria a linha ao salvar e a referência antiga fica solta
-        const findInventoryAbil = () => findAbilityElementByName(doc, inventoryMacroName);
-        const findInventoryField = (abil) => abil?.querySelector('textarea, input[name*="action"]') || inventoryTextareaElem;
+        setupMacroTextarea(doc, invTextarea, inventoryMacroName, inventoryTextareaElem);
+    }
 
-        invTextarea.addEventListener('input', () => {
-            updateOriginalInput(findInventoryField(findInventoryAbil()), invTextarea.value);
+    root.querySelectorAll('.dh-sheet-tab').forEach(tabBtn => {
+        tabBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tab = tabBtn.getAttribute('data-sheet-tab');
+            root.dataset.activeTab = tab;
+            root.querySelectorAll('.dh-sheet-tab').forEach(btn => {
+                btn.classList.toggle('dh-sheet-tab--active', btn === tabBtn);
+            });
+            root.querySelectorAll('.dh-sheet-panel').forEach(panel => {
+                panel.classList.toggle('dh-sheet-panel--active', panel.getAttribute('data-sheet-panel') === tab);
+            });
         });
+    });
 
-        // Salva só ao sair do campo: salvar a cada tecla recriaria a linha da macro sem necessidade
-        invTextarea.addEventListener('change', () => {
-            const abil = findInventoryAbil();
-            updateOriginalInput(findInventoryField(abil), invTextarea.value);
-            const saveBtn = abil?.querySelector('.saveabil');
-            if (saveBtn) saveBtn.click();
+    root.querySelectorAll('.dh-text-macro-textarea').forEach((textarea, idx) => {
+        setupMacroTextarea(doc, textarea, textMacros[idx].rawName, textMacros[idx].field);
+    });
+
+    const addTxtBtn = root.querySelector('#dh-add-txt');
+    if (addTxtBtn) {
+        addTxtBtn.addEventListener('click', () => {
+            const textName = prompt('Nome do novo Texto:')?.trim();
+            if (!textName) return;
+            // As caixas acham a macro pelo nome: um nome repetido gravaria sempre na primeira
+            if (abilityExistsInRoll20(doc, `txt_${textName}`)) {
+                alert(`Já existe um texto chamado "${textName}".`);
+                return;
+            }
+            addNewMacroToRoll20(doc, 'txt', null, `txt_${textName}`);
         });
     }
 

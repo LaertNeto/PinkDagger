@@ -9,6 +9,7 @@ const MACRO_TEMPLATES = {
     dom: `&{template:default} {{name=Nome da Carta\n}} {{Nível=1\n}} {{Custo=0\n}} {{Descrição=O que a carta de domínio faz.\n}}`,
     exp: `&{template:default} {{name=Nome da Experiência\n}} {{Modificador=+2\n}}`,
     inv: `Itens:`,
+    txt: ``,
     ataque: `&{template:default} {{name=Ataque\n}} {{Ataque=[[d20+@{atq}]]\n}} {{Dano=[[@{dano}]] @{tipo_dano}\n}}`,
     hab: `&{template:default} {{name=Nome da Habilidade\n}} {{Efeito=O que a habilidade faz.\n}}`,
     companion_attack: `&{template:default} {{name=Nome do Ataque\n}} {{Ataque=[[d20+@{atq}]]\n}} {{dano=[[@{proficiência}d6]]\n}}`
@@ -32,6 +33,9 @@ const SETTINGS_STORAGE_KEY = 'pinkdagger_settings';
 const SETTINGS_DEFAULTS = {
     cardView: 'detailed' // 'detailed' | 'simple'
 };
+
+// Altura das caixas de texto de macro (salva no navegador, por personagem e macro)
+const TEXTAREA_HEIGHTS_STORAGE_KEY = 'pinkdagger_textarea_heights';
 
 // Atributos principais e recursos/trackers fixos do sistema Daggerheart
 const FIXED_TRAITS = ['agilidade', 'força', 'acuidade', 'instinto', 'presença', 'conhecimento'];

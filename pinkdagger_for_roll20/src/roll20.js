@@ -136,7 +136,7 @@ function addNewMacroToRoll20(doc, prefix, promptMessage, customFullName = null, 
                     }
 
                     if (macroTextarea) {
-                        let defaultTemplate = MACRO_TEMPLATES[templateKey] || MACRO_TEMPLATES.exp;
+                        let defaultTemplate = MACRO_TEMPLATES[templateKey] ?? MACRO_TEMPLATES.exp;
                         let customizedTemplate = defaultTemplate.replace(/\{\{name=[^\n\}]*/, `{{name=${cleanName}`);
 
                         macroTextarea.value = customizedTemplate;

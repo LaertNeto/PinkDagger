@@ -87,6 +87,54 @@ body.dh-docked .dh-container {
     color: #f1c40f;
 }
 
+/* Abas internas da ficha (Ficha / Textos) */
+.dh-sheet-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #3c4252;
+}
+
+.dh-sheet-tab {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    color: #a0aec0;
+    font-size: 0.85em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.dh-sheet-tab:hover {
+    color: #e2e8f0;
+}
+
+.dh-sheet-tab--active,
+.dh-sheet-tab--active:hover {
+    color: #E85D9E;
+    border-bottom-color: #E85D9E;
+}
+
+.dh-sheet-panel {
+    display: none;
+}
+
+.dh-sheet-panel--active {
+    display: block;
+}
+
+.dh-text-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
 /* Seções com Título e Botão de Adicionar */
 .dh-section-title {
     background: #1e2230;

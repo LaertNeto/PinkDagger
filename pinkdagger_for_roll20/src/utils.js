@@ -1,3 +1,11 @@
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
 function formatTextWithNewlines(text) {
     if (!text) return '';
     return text
@@ -132,6 +140,27 @@ function savePinkDaggerSettings(changes) {
         window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     } catch (err) {}
     return settings;
+}
+
+function loadTextareaHeights() {
+    try {
+        return JSON.parse(window.localStorage.getItem(TEXTAREA_HEIGHTS_STORAGE_KEY)) || {};
+    } catch (err) {
+        return {};
+    }
+}
+
+function getSavedTextareaHeight(doc, macroName) {
+    return loadTextareaHeights()[getSheetCharacterName(doc)]?.[macroName.toLowerCase()] || null;
+}
+
+function saveTextareaHeight(doc, macroName, height) {
+    const heights = loadTextareaHeights();
+    const charName = getSheetCharacterName(doc);
+    heights[charName] = { ...heights[charName], [macroName.toLowerCase()]: height };
+    try {
+        window.localStorage.setItem(TEXTAREA_HEIGHTS_STORAGE_KEY, JSON.stringify(heights));
+    } catch (err) {}
 }
 
 // Tooltip flutuante compartilhado (um por documento)
