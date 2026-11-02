@@ -802,6 +802,21 @@ body.dh-docked .dh-container {
 }
 
 /* Bolinhas de Rastreio menores */
+.dh-tracker-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dh-tracker-bar .dh-dots-container {
+    flex: 1;
+    min-width: 0;
+}
+
+.dh-tracker-bar .dh-defense-spin-btn {
+    flex-shrink: 0;
+}
+
 .dh-dots-container {
     display: flex;
     flex-wrap: wrap;

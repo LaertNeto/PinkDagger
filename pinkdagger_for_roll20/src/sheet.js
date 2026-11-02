@@ -110,6 +110,53 @@ function setupDefenseControl(doc, root, key, defObj, possibleNames) {
     }
 }
 
+function getTrackerBarHTML(trackerKey, tracker) {
+    const totalDots = Math.max(tracker.max, tracker.current, 1);
+    let dotsHTML = '';
+    for (let i = 1; i <= totalDots; i++) {
+        dotsHTML += `<div class="dh-dot ${trackerKey} ${i <= tracker.current ? 'active' : 'inactive'}"></div>`;
+    }
+    return `
+        <div class="dh-tracker-bar" data-tracker="${trackerKey}">
+            <button type="button" class="dh-defense-spin-btn dh-tracker-down" title="Diminuir">−</button>
+            <div class="dh-dots-container">${dotsHTML}</div>
+            <button type="button" class="dh-defense-spin-btn dh-tracker-up" title="Aumentar">+</button>
+        </div>
+    `;
+}
+
+function setupTrackerBars(doc, root, trackers) {
+    root.querySelectorAll('.dh-tracker-bar').forEach(bar => {
+        const trackerKey = bar.getAttribute('data-tracker');
+        const tracker = trackers[trackerKey];
+        const dots = bar.querySelectorAll('.dh-dot');
+        const valueElem = bar.closest('.dh-stat-box').querySelector('.dh-stat-value');
+        let current = tracker.current;
+
+        const changeTracker = (e, delta) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const newVal = current + delta;
+            if (newVal < 0 || newVal > dots.length) return;
+
+            // Busca o campo novamente: o Roll20 recria a linha do atributo e a referência antiga fica solta
+            const targetInput = findAttributeInput(doc, [trackerKey]);
+            if (!targetInput) return;
+
+            current = newVal;
+            updateOriginalInput(targetInput, current);
+            valueElem.innerText = `${current} / ${tracker.max}`;
+            dots.forEach((dot, idx) => {
+                dot.classList.toggle('active', idx < current);
+                dot.classList.toggle('inactive', idx >= current);
+            });
+        };
+
+        bar.querySelector('.dh-tracker-down').addEventListener('click', (e) => changeTracker(e, -1));
+        bar.querySelector('.dh-tracker-up').addEventListener('click', (e) => changeTracker(e, 1));
+    });
+}
+
 function renderFearSheet(doc, root, medoStats) {
     const headerMeta = doc.querySelector('.dh-header-meta');
     if (headerMeta) {
@@ -867,19 +914,13 @@ function populateDaggerheartData(doc) {
         const displayName = trackerKey.charAt(0).toUpperCase() + trackerKey.slice(1);
         
         if (item && item.exists) {
-            const totalDots = Math.max(item.max, item.current, 1);
-            let dotsHTML = '';
-            for (let i = 1; i <= totalDots; i++) {
-                const isActive = i <= item.current ? 'active' : 'inactive';
-                dotsHTML += `<div class="dh-dot ${trackerKey} ${isActive}"></div>`;
-            }
             statsHTML += `
                 <div class="dh-stat-box">
                     <div class="dh-stat-header">
                         <span class="dh-stat-label">${displayName}</span>
                         <span class="dh-stat-value">${item.current} / ${item.max}</span>
                     </div>
-                    <div class="dh-dots-container">${dotsHTML}</div>
+                    ${getTrackerBarHTML(trackerKey, item)}
                 </div>
             `;
         } else {
@@ -1413,6 +1454,8 @@ function populateDaggerheartData(doc) {
     if (addDomainBtn) addDomainBtn.addEventListener('click', () => addNewMacroToRoll20(doc, 'dom', 'Nome da nova Carta de Domínio:'));
     const openVaultBtn = root.querySelector('#dh-open-vault');
     if (openVaultBtn) openVaultBtn.addEventListener('click', () => openVaultModal(doc));
+
+    setupTrackerBars(doc, root, trackersMap);
 
     if (moneyMap.punhado.exists) setupMoneyControl(doc, root, 'punhado', moneyMap.punhado, ['punhado', 'moeda_punhado']);
     if (moneyMap.bolsa.exists) setupMoneyControl(doc, root, 'bolsa', moneyMap.bolsa, ['bolsa', 'moeda_bolsa']);

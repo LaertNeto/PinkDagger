@@ -35,18 +35,13 @@ function renderCompanionSheet(doc, root, stats) {
 
     let fadigaHTML = '';
     if (fadiga && fadiga.exists) {
-        const totalDots = Math.max(fadiga.max, fadiga.current, 1);
-        let dotsHTML = '';
-        for (let i = 1; i <= totalDots; i++) {
-            dotsHTML += `<div class="dh-dot fadiga ${i <= fadiga.current ? 'active' : 'inactive'}"></div>`;
-        }
         fadigaHTML = `
             <div class="dh-stat-box">
                 <div class="dh-stat-header">
                     <span class="dh-stat-label">Fadiga</span>
                     <span class="dh-stat-value">${fadiga.current} / ${fadiga.max}</span>
                 </div>
-                <div class="dh-dots-container">${dotsHTML}</div>
+                ${getTrackerBarHTML('fadiga', fadiga)}
             </div>
         `;
     } else {
@@ -196,6 +191,8 @@ function renderCompanionSheet(doc, root, stats) {
     applySimpleCardView(doc, root, ['#dh-companion-abilities-container']);
 
     // --- Listeners ---
+    setupTrackerBars(doc, root, { fadiga });
+
     if (evasao && evasao.exists) {
         setupDefenseControl(doc, root, 'evasao', evasao, ['evasão', 'evasao']);
     }
