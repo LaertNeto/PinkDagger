@@ -82,6 +82,35 @@ function createAttributeMacroInRoll20(doc, attrName, callback) {
     }, 150);
 }
 
+// Rola o atributo principal; se o macro dele não existir na ficha, cria antes de rolar
+function rollTraitOrCreateMacro(doc, traitKey) {
+    if (abilityExistsInRoll20(doc, traitKey)) {
+        triggerRollForAbilityName(doc, traitKey);
+        return;
+    }
+
+    // Um segundo clique durante a criação ainda não veria o macro e criaria outro igual
+    if (doc._pdCreatingTraitMacro) return;
+
+    const navTabs = doc.querySelector('.nav.nav-tabs');
+    const attrTabNav = navTabs?.querySelector('a[data-tab="attributesabilities"]');
+    const pinkDaggerNav = navTabs?.querySelector('a[data-tab="daggerheart"]');
+    if (!attrTabNav) return;
+
+    doc._pdCreatingTraitMacro = true;
+    attrTabNav.click();
+
+    setTimeout(() => {
+        const properName = traitKey.charAt(0).toUpperCase() + traitKey.slice(1);
+        createAttributeMacroInRoll20(doc, properName, () => {
+            doc._pdCreatingTraitMacro = false;
+            if (pinkDaggerNav) pinkDaggerNav.click();
+            populateDaggerheartData(doc);
+            setTimeout(() => triggerRollForAbilityName(doc, traitKey), 150);
+        });
+    }, 150);
+}
+
 function addNewMacroToRoll20(doc, prefix, promptMessage, customFullName = null, templateKey = prefix) {
     const navTabs = doc.querySelector('.nav.nav-tabs');
     if (!navTabs) return;

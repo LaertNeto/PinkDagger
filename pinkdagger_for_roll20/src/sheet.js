@@ -1476,7 +1476,7 @@ function populateDaggerheartData(doc) {
         traitsContainer.querySelectorAll('.dh-trait-card[data-trait]').forEach(card => {
             card.addEventListener('click', () => {
                 const traitKey = card.getAttribute('data-trait');
-                triggerRollForAbilityName(doc, traitKey);
+                rollTraitOrCreateMacro(doc, traitKey);
             });
         });
     }

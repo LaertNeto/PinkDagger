@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PinkDagger for Roll20",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Interface customizada e interativa para fichas de Daggerheart no Roll20.",
   "browser_specific_settings": {
     "gecko": {
