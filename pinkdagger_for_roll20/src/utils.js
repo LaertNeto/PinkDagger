@@ -72,9 +72,10 @@ function extractMacroFieldsList(macroText) {
     return fieldsList;
 }
 
-function renderCheckboxesInText(text, abilIndex) {
+// firstCbIndex: quantos checkboxes vêm antes deste texto na macro; o índice precisa contar a macro inteira
+function renderCheckboxesInText(text, abilIndex, firstCbIndex = 0) {
     if (!text) return '';
-    let cbCount = 0;
+    let cbCount = firstCbIndex;
     let formatted = formatTextWithNewlines(text);
 
     return formatted.replace(/\(\s*[xX]?\s*\)/g, (match) => {

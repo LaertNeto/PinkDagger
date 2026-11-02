@@ -1,23 +1,33 @@
-function setupMoneyControl(root, key, moneyObj) {
+function setupMoneyControl(doc, root, key, moneyObj, possibleNames) {
     const inputElem = root.querySelector(`#dh-money-${key}`);
     const btnUp = root.querySelector(`#dh-${key}-up`);
     const btnDown = root.querySelector(`#dh-${key}-down`);
 
     if (btnUp && btnDown && inputElem) {
-        btnUp.addEventListener('click', () => {
+        const save = (val) => {
+            // Busca o campo novamente: o Roll20 recria a linha do atributo e a referência antiga fica solta
+            const targetInput = findAttributeInput(doc, possibleNames) || moneyObj.input;
+            if (targetInput) updateOriginalInput(targetInput, val);
+        };
+
+        btnUp.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             let val = parseInt(inputElem.value, 10);
             if (isNaN(val)) val = 0;
             val++;
             inputElem.value = val;
-            if (moneyObj.input) updateOriginalInput(moneyObj.input, val);
+            save(val);
         });
 
-        btnDown.addEventListener('click', () => {
+        btnDown.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             let val = parseInt(inputElem.value, 10);
             if (isNaN(val)) val = 0;
             if (val > 0) val--;
             inputElem.value = val;
-            if (moneyObj.input) updateOriginalInput(moneyObj.input, val);
+            save(val);
         });
     }
 }
@@ -49,7 +59,7 @@ function setupDefenseControl(doc, root, key, defObj, possibleNames) {
             val++;
             valElem.innerText = val;
             defObj.val = val;
-            const targetInput = defObj.input || findAttributeInput(doc, possibleNames);
+            const targetInput = findAttributeInput(doc, possibleNames) || defObj.input;
             if (targetInput) updateOriginalInput(targetInput, val);
         });
 
@@ -61,7 +71,7 @@ function setupDefenseControl(doc, root, key, defObj, possibleNames) {
             if (val > 0) val--;
             valElem.innerText = val;
             defObj.val = val;
-            const targetInput = defObj.input || findAttributeInput(doc, possibleNames);
+            const targetInput = findAttributeInput(doc, possibleNames) || defObj.input;
             if (targetInput) updateOriginalInput(targetInput, val);
         });
     }
@@ -913,6 +923,7 @@ function populateDaggerheartData(doc) {
     
     let inventoryText = '';
     let inventoryTextareaElem = null;
+    let inventoryMacroName = null;
 
     if (abilityElements.length > 0) {
         abilityElements.forEach((abil, abilIdx) => {
@@ -1010,28 +1021,34 @@ function populateDaggerheartData(doc) {
                 const fields = extractMacroFields(macroContent);
                 const levelTitle = fields['name'] ? formatTextWithNewlines(fields['name']) : fallbackName;
                 let blocksHTML = '';
+                let searchFrom = 0;
 
-                Object.keys(fields).forEach(key => {
-                    if (key !== 'name') {
-                        const formattedKey = key.charAt(0).toUpperCase() + key.slice(1);
-                        const renderedText = renderCheckboxesInText(fields[key], abilIdx);
-                        blocksHTML += `
-                            <div class="dh-level-block">
-                                <span class="dh-level-block-name">${formattedKey}:</span>
-                                <div class="dh-level-block-text">${renderedText}</div>
-                            </div>
-                        `;
-                    }
+                extractMacroFieldsList(macroContent).forEach(field => {
+                    const fieldPos = macroContent.indexOf(field.value, searchFrom);
+                    searchFrom = fieldPos + field.value.length;
+                    if (field.isName) return;
+
+                    const lowerKey = field.key.toLowerCase();
+                    const formattedKey = lowerKey.charAt(0).toUpperCase() + lowerKey.slice(1);
+                    const firstCbIndex = (macroContent.slice(0, fieldPos).match(/\(\s*[xX]?\s*\)/g) || []).length;
+                    const renderedText = renderCheckboxesInText(field.value, abilIdx, firstCbIndex);
+                    blocksHTML += `
+                        <div class="dh-level-block">
+                            <span class="dh-level-block-name">${formattedKey}:</span>
+                            <div class="dh-level-block-text">${renderedText}</div>
+                        </div>
+                    `;
                 });
 
                 levelCardsHTML += `
-                    <div class="dh-level-card" data-abil-idx="${abilIdx}">
+                    <div class="dh-level-card" data-abil-idx="${abilIdx}" data-card-fullname="${rawName}">
                         <div class="dh-level-title">${levelTitle}</div>
                         ${blocksHTML || '<div class="dh-level-block">Sem dados.</div>'}
                     </div>
                 `;
             } else if (lowerName === 'inventario' || lowerName === 'inventário' || lowerName === 'inv_inventario') {
                 inventoryTextareaElem = abil.querySelector('textarea, input[name*="action"]');
+                inventoryMacroName = rawName;
                 inventoryText = inventoryTextareaElem ? inventoryTextareaElem.value : '';
             } else if (lowerName.startsWith('wea_')) {
                 weaponCount++;
@@ -1181,8 +1198,8 @@ function populateDaggerheartData(doc) {
                     <div class="dh-spinner-group">
                         <input type="text" class="dh-spinner-input" id="dh-money-${key}" value="${m.val}" readonly>
                         <div class="dh-spinner-btns">
-                            <button class="dh-spin-btn" id="dh-${key}-up">▲</button>
-                            <button class="dh-spin-btn" id="dh-${key}-down">▼</button>
+                            <button type="button" class="dh-spin-btn" id="dh-${key}-up">▲</button>
+                            <button type="button" class="dh-spin-btn" id="dh-${key}-down">▼</button>
                         </div>
                     </div>
                 </div>
@@ -1232,8 +1249,20 @@ function populateDaggerheartData(doc) {
 
     const invTextarea = root.querySelector('#dh-inv-text');
     if (invTextarea && inventoryTextareaElem) {
+        // Busca a macro novamente: o Roll20 recria a linha ao salvar e a referência antiga fica solta
+        const findInventoryAbil = () => findAbilityElementByName(doc, inventoryMacroName);
+        const findInventoryField = (abil) => abil?.querySelector('textarea, input[name*="action"]') || inventoryTextareaElem;
+
         invTextarea.addEventListener('input', () => {
-            updateOriginalInput(inventoryTextareaElem, invTextarea.value);
+            updateOriginalInput(findInventoryField(findInventoryAbil()), invTextarea.value);
+        });
+
+        // Salva só ao sair do campo: salvar a cada tecla recriaria a linha da macro sem necessidade
+        invTextarea.addEventListener('change', () => {
+            const abil = findInventoryAbil();
+            updateOriginalInput(findInventoryField(abil), invTextarea.value);
+            const saveBtn = abil?.querySelector('.saveabil');
+            if (saveBtn) saveBtn.click();
         });
     }
 
@@ -1306,9 +1335,9 @@ function populateDaggerheartData(doc) {
     const openVaultBtn = root.querySelector('#dh-open-vault');
     if (openVaultBtn) openVaultBtn.addEventListener('click', () => openVaultModal(doc));
 
-    if (moneyMap.punhado.exists) setupMoneyControl(root, 'punhado', moneyMap.punhado);
-    if (moneyMap.bolsa.exists) setupMoneyControl(root, 'bolsa', moneyMap.bolsa);
-    if (moneyMap.bau.exists) setupMoneyControl(root, 'bau', moneyMap.bau);
+    if (moneyMap.punhado.exists) setupMoneyControl(doc, root, 'punhado', moneyMap.punhado, ['punhado', 'moeda_punhado']);
+    if (moneyMap.bolsa.exists) setupMoneyControl(doc, root, 'bolsa', moneyMap.bolsa, ['bolsa', 'moeda_bolsa']);
+    if (moneyMap.bau.exists) setupMoneyControl(doc, root, 'bau', moneyMap.bau, ['baú', 'bau', 'moeda_bau']);
 
     if (defenses.evasao && defenses.evasao.exists) {
         setupDefenseControl(doc, root, 'evasao', defenses.evasao, ['evasão', 'evasao']);
@@ -1466,8 +1495,9 @@ function populateDaggerheartData(doc) {
     if (levelContainer) {
         levelContainer.querySelectorAll('.dh-level-checkbox').forEach(cb => {
             cb.addEventListener('change', (e) => {
-                const abilIdx = cb.getAttribute('data-abil-idx');
-                const targetAbil = abilityElements[abilIdx];
+                // Busca a macro novamente: o Roll20 recria a linha ao salvar e a referência antiga fica solta
+                const fullName = cb.closest('.dh-level-card').getAttribute('data-card-fullname');
+                const targetAbil = findAbilityElementByName(doc, fullName);
                 if (!targetAbil) return;
 
                 const macroTextarea = targetAbil.querySelector('textarea, input[name*="action"]');
@@ -1487,6 +1517,13 @@ function populateDaggerheartData(doc) {
                 });
 
                 updateOriginalInput(macroTextarea, newVal);
+
+                const saveBtn = targetAbil.querySelector('.saveabil');
+                if (saveBtn) saveBtn.click();
+
+                setTimeout(() => {
+                    populateDaggerheartData(doc);
+                }, 150);
             });
         });
     }
@@ -1502,7 +1539,7 @@ function populateDaggerheartData(doc) {
             if (isNaN(val)) val = 0;
             val++;
             inputElem.value = val;
-            updateOriginalInput(statObj.originalInput, val);
+            updateOriginalInput(findAttributeInput(doc, [statObj.name.toLowerCase()]) || statObj.originalInput, val);
         });
 
         box.querySelector('.dh-btn-down').addEventListener('click', () => {
@@ -1510,7 +1547,7 @@ function populateDaggerheartData(doc) {
             if (isNaN(val)) val = 0;
             val--;
             inputElem.value = val;
-            updateOriginalInput(statObj.originalInput, val);
+            updateOriginalInput(findAttributeInput(doc, [statObj.name.toLowerCase()]) || statObj.originalInput, val);
         });
     });
 
