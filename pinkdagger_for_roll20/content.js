@@ -112,6 +112,64 @@
                 });
             }
         });
+
+        chrome.storage.local.get(EXTENSION_OPTIONS_DEFAULTS, (options) => {
+            if (options.autoOpenTab) autoOpenPinkDaggerTab(doc, navTabs, daggerheartNavItem);
+        });
+    }
+
+    // Os atributos podem carregar depois da ficha, então a checagem se repete por alguns segundos.
+    // Fichas sem marcador (ex.: de outro sistema) continuam abrindo na aba nativa.
+    function autoOpenPinkDaggerTab(doc, navTabs, navItem) {
+        // TEMP: logs de diagnóstico da abertura automática
+        const log = (...args) => console.log('[PinkDagger auto-abrir]', ...args);
+        const getAttrNames = () => Array.from(doc.querySelectorAll('.attributesabilities .attributes .attrib'))
+            .map(attr => attr.querySelector('.attrname')?.innerText?.trim() || (attr.querySelector('.attrname input')?.value?.trim() || ''));
+        log('iniciou; aba ativa:', navTabs.querySelector('li.active a')?.getAttribute('data-tab'));
+
+        // Só cliques reais contam: o próprio Roll20 também clica nas abas por script
+        let userChoseTab = false;
+        navTabs.addEventListener('click', (e) => {
+            log('clique na barra de abas; real:', e.isTrusted, 'alvo:', e.target.getAttribute?.('data-tab'));
+            if (e.isTrusted) userChoseTab = true;
+        }, true);
+
+        let attempts = 0;
+        let originalTabNav = null;
+        let forcedAtAttempt = 0;
+        const check = () => {
+            attempts++;
+            if (userChoseTab) {
+                log('cancelado: a pessoa escolheu uma aba');
+                clearInterval(timer);
+            } else if (attempts > 100) {
+                log('desistiu: sem marcador em 10s; atributos lidos:', getAttrNames());
+                clearInterval(timer);
+            } else if (!isPinkDaggerSheet(doc)) {
+                const attrCount = getAttrNames().length;
+                if (attempts === 1 && attrCount === 0) {
+                    // A lista de atributos pode só ser montada quando a aba nativa é aberta
+                    originalTabNav = navTabs.querySelector('li.active a');
+                    forcedAtAttempt = attempts;
+                    log('sem atributos; abrindo a aba nativa para carregá-los');
+                    navTabs.querySelector('a[data-tab="attributesabilities"]')?.click();
+                } else if (originalTabNav && (attrCount > 0 || attempts >= forcedAtAttempt + 30)) {
+                    log('sem marcador; voltando para a aba original; atributos lidos:', attrCount);
+                    originalTabNav.click();
+                    originalTabNav = null;
+                }
+            } else {
+                log('marcador encontrado na tentativa', attempts, '- abrindo');
+                clearInterval(timer);
+                navItem.click();
+                setTimeout(() => {
+                    log('1,5s depois; aba ativa:', navTabs.querySelector('li.active a')?.getAttribute('data-tab'),
+                        '| painel PinkDagger:', doc.querySelector('.daggerheart.tab-pane')?.style.display);
+                }, 1500);
+            }
+        };
+        const timer = setInterval(check, 100);
+        check(); // Primeira checagem no momento em que a aba PinkDagger é adicionada
     }
 
     setInterval(() => {
@@ -125,6 +183,6 @@
                 }
             } catch (err) {}
         });
-    }, 1000);
+    }, 250);
 
 })();

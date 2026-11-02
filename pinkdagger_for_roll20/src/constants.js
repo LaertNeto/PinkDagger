@@ -34,6 +34,14 @@ const SETTINGS_DEFAULTS = {
     cardView: 'detailed' // 'detailed' | 'simple'
 };
 
+// Opções da página de configurações da extensão (chrome.storage: o localStorage do Roll20 não é visível nessa página)
+const EXTENSION_OPTIONS_DEFAULTS = {
+    autoOpenTab: true
+};
+
+// Atributos que marcam a ficha como já configurada para o PinkDagger
+const SHEET_TYPE_MARKERS = ['pinkdagger_pc', 'pinkdagger_npc', 'pinkdagger_fear', 'pinkdagger_companion'];
+
 // Altura das caixas de texto de macro (salva no navegador, por personagem e macro)
 const TEXTAREA_HEIGHTS_STORAGE_KEY = 'pinkdagger_textarea_heights';
 

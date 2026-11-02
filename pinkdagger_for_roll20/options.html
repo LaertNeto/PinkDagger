@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>PinkDagger - Configurações</title>
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #12141c;
+            color: #e2e8f0;
+            font-family: 'Nunito', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        main {
+            max-width: 560px;
+            margin: 0 auto;
+            padding: 32px 16px;
+        }
+
+        h1 {
+            margin: 0 0 20px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #5a657d;
+            color: #E85D9E;
+            font-size: 1.3em;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .option {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px;
+            background: #171a23;
+            border: 1px solid #3c4252;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .option:hover {
+            border-color: #E85D9E;
+        }
+
+        .option input {
+            margin-top: 3px;
+            accent-color: #E85D9E;
+        }
+
+        .option span {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .option strong {
+            color: #f1c40f;
+        }
+
+        .option small {
+            color: #a0aec0;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>PinkDagger</h1>
+        <label class="option">
+            <input type="checkbox" id="auto-open-tab">
+            <span>
+                <strong>Abrir fichas na aba PinkDagger</strong>
+                <small>Ao abrir uma ficha já configurada para o PinkDagger, troca para a aba automaticamente. A mudança vale para as próximas fichas abertas.</small>
+            </span>
+        </label>
+    </main>
+    <script src="src/constants.js"></script>
+    <script src="options.js"></script>
+</body>
+</html>

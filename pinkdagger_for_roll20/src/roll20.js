@@ -269,6 +269,13 @@ function getSheetCharacterName(doc) {
     return doc.querySelector('input.name')?.value?.trim() || '';
 }
 
+function isPinkDaggerSheet(doc) {
+    return Array.from(doc.querySelectorAll('.attributesabilities .attributes .attrib')).some(attr => {
+        const name = attr.querySelector('.attrname')?.innerText?.trim() || (attr.querySelector('.attrname input')?.value?.trim() || '');
+        return SHEET_TYPE_MARKERS.includes(name.toLowerCase());
+    });
+}
+
 function findAbilityElementByName(doc, abilName) {
     const target = abilName.trim().toLowerCase();
     return Array.from(doc.querySelectorAll('.attributesabilities .abilities .abil')).find(abil => {
