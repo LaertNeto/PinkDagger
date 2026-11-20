@@ -13,6 +13,8 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 ### Correções
 - O texto do **Inventário** e das caixas da aba **Textos** podia se perder: ele só era salvo ao sair da caixa, então fechar a ficha, dar F5, trocar de janela ou ter a ficha redesenhada com o cursor ainda nela descartava o que foi escrito. Agora o texto é salvo 1 segundo depois de parar de digitar, e também antes de a ficha ser redesenhada e quando a janela é fechada.
 - Textos do Inventário com caracteres como `&amp;` ou `<` eram alterados quando a ficha era redesenhada.
+- Mudar o nome de uma carta (Domínio, Ancestralidade, Comunidade, Classe, Subclasse, Esperança ou Habilidade de PNJ) pela ficha não mudava o nome da macro em **Atributos e Habilidades**. Agora a macro é renomeada junto, mantendo o prefixo (ex.: `dom_`); se já existir outra macro com o nome novo, a ficha avisa e mantém o nome antigo. ([#3](https://github.com/LaertNeto/PinkDagger/issues/3))
+- Com a ficha fixada no canto da tela (ou qualquer ficha estreita), as Experiências ficavam espremidas. Agora Defesas e Experiências ficam uma embaixo da outra, e em fichas bem estreitas cada experiência ocupa uma linha. ([#2](https://github.com/LaertNeto/PinkDagger/issues/2))
 
 ### Outros
 - Novas permissões: `contextMenus` (menu do ícone da extensão) e `nativeMessaging` (conversa com o auxiliar de atualização).
