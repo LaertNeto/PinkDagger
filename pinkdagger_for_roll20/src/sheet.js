@@ -32,23 +32,71 @@ function setupMoneyControl(doc, root, key, moneyObj, possibleNames) {
     }
 }
 
+// Tempo sem digitar até salvar a caixa de texto na macro do Roll20
+const MACRO_TEXT_SAVE_DELAY_MS = 1000;
+
+// Salva agora todas as caixas de texto com alterações pendentes. Chamado antes de
+// redesenhar a ficha e quando a janela vai ser fechada, para nada se perder.
+function flushPendingMacroTextSaves(doc) {
+    const pending = doc.__pinkdaggerPendingTextSaves;
+    if (!pending) return;
+    Array.from(pending).forEach(flush => flush());
+}
+
 // Caixa de texto ligada ao conteúdo inteiro de uma macro (Inventário e macros txt_)
 function setupMacroTextarea(doc, textarea, macroName, originalField) {
     // Busca a macro novamente: o Roll20 recria a linha ao salvar e a referência antiga fica solta
     const findAbil = () => findAbilityElementByName(doc, macroName);
     const findField = (abil) => abil?.querySelector('textarea, input[name*="action"]') || originalField;
 
-    textarea.addEventListener('input', () => {
-        updateOriginalInput(findField(findAbil()), textarea.value);
-    });
+    if (!doc.__pinkdaggerPendingTextSaves) {
+        doc.__pinkdaggerPendingTextSaves = new Set();
+        const flushAll = () => flushPendingMacroTextSaves(doc);
+        doc.defaultView?.addEventListener('pagehide', flushAll);
+        doc.addEventListener('visibilitychange', () => {
+            if (doc.visibilityState === 'hidden') flushAll();
+        });
+    }
+    const pending = doc.__pinkdaggerPendingTextSaves;
 
-    // Salva só ao sair do campo: salvar a cada tecla recriaria a linha da macro sem necessidade
-    textarea.addEventListener('change', () => {
+    let saveTimer = null;
+
+    // O texto só fica gravado no Roll20 ao clicar em Salvar na macro. Antes isso só
+    // acontecia no evento "change" (ao sair do campo), que não dispara se a ficha for
+    // redesenhada, fechada ou recarregada com o cursor ainda na caixa: o texto se perdia.
+    const flush = () => {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+        pending.delete(flush);
+
         const abil = findAbil();
         updateOriginalInput(findField(abil), textarea.value);
         const saveBtn = abil?.querySelector('.saveabil');
-        if (saveBtn) saveBtn.click();
+        if (!saveBtn) return;
+
+        // Salvar recria a linha da macro no Roll20; se isso tirar o foco de quem
+        // ainda está digitando, o cursor volta para o mesmo lugar
+        const hadFocus = textarea.ownerDocument.activeElement === textarea;
+        const { selectionStart, selectionEnd } = textarea;
+        saveBtn.click();
+        if (hadFocus && textarea.isConnected && textarea.ownerDocument.activeElement !== textarea) {
+            textarea.focus();
+            textarea.setSelectionRange(selectionStart, selectionEnd);
+        }
+    };
+
+    textarea.addEventListener('input', () => {
+        updateOriginalInput(findField(findAbil()), textarea.value);
+        pending.add(flush);
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(flush, MACRO_TEXT_SAVE_DELAY_MS);
     });
+
+    const flushIfPending = () => {
+        if (pending.has(flush)) flush();
+    };
+    textarea.addEventListener('change', flushIfPending);
+    textarea.addEventListener('blur', flushIfPending);
 
     const savedHeight = getSavedTextareaHeight(doc, macroName);
     if (savedHeight) textarea.style.height = `${savedHeight}px`;
@@ -254,6 +302,9 @@ function applySimpleCardView(doc, root, containerSelectors) {
 function populateDaggerheartData(doc) {
     const root = doc.getElementById('dh-content-root');
     if (!root) return;
+
+    // O re-render recria as caixas de texto: o que ainda não foi salvo vai para o Roll20 antes
+    flushPendingMacroTextSaves(doc);
 
     // O re-render remove os cards; o tooltip e o modo simplificado são reaplicados abaixo
     hideCardTooltip(doc);
@@ -1300,7 +1351,7 @@ function populateDaggerheartData(doc) {
         <div class="dh-inventory-grid">
             <div class="dh-inventory-textbox">
                 <span class="dh-inventory-label">Inventário</span>
-                <textarea class="dh-inventory-textarea" id="dh-inv-text" ${!inventoryTextareaElem ? 'disabled' : ''} placeholder="${inventoryTextareaElem ? 'Digite os itens do inventário aqui...' : 'Clique no botão + acima para criar o campo de inventário primeiro.'}">${inventoryText}</textarea>
+                <textarea class="dh-inventory-textarea" id="dh-inv-text" ${!inventoryTextareaElem ? 'disabled' : ''} placeholder="${inventoryTextareaElem ? 'Digite os itens do inventário aqui...' : 'Clique no botão + acima para criar o campo de inventário primeiro.'}">${escapeHtml(inventoryText)}</textarea>
             </div>
             <div class="dh-money-box" id="dh-money-container">
                 <span class="dh-inventory-label" style="text-align: center;">Dinheiro</span>

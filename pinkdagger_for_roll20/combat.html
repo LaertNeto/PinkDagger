@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>PinkDagger - Calculadora de Combate</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #12141c;
+            color: #e2e8f0;
+            font-family: 'Nunito', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+        }
+
+        main {
+            max-width: 560px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #5a657d;
+        }
+
+        h1 {
+            margin: 0;
+            color: #E85D9E;
+            font-size: 1.15em;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            margin: 16px 0 8px;
+            color: #f1c40f;
+            font-size: 0.85em;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        button,
+        input,
+        select {
+            font: inherit;
+            color: inherit;
+        }
+
+        .clear-btn {
+            padding: 4px 12px;
+            background: #171a23;
+            border: 1px solid #3c4252;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .clear-btn:hover {
+            border-color: #E85D9E;
+        }
+
+        .party {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .party-field {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            color: #a0aec0;
+            font-size: 0.85em;
+        }
+
+        .party-field select {
+            height: 32px;
+            padding: 0 6px;
+            background: #171a23;
+            border: 1px solid #3c4252;
+            border-radius: 4px;
+            color: #e2e8f0;
+            font-size: 14px;
+        }
+
+        .summary {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            margin: 12px -16px 0;
+            padding: 10px 16px;
+            background: #12141c;
+            border-bottom: 1px solid #3c4252;
+        }
+
+        .totals {
+            display: flex;
+            gap: 8px;
+        }
+
+        .total {
+            flex: 1;
+            padding: 6px;
+            background: #171a23;
+            border: 1px solid #3c4252;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .total strong {
+            display: block;
+            font-size: 1.5em;
+            line-height: 1.2;
+        }
+
+        .total small {
+            color: #a0aec0;
+        }
+
+        .status {
+            margin: 8px 0 0;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .status-neutral { color: #a0aec0; }
+        .status-under { color: #f1c40f; }
+        .status-balanced { color: #2ecc71; }
+        .status-over { color: #ff6b6b; }
+
+        .adversary {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 10px;
+            background: #171a23;
+            border: 1px solid #3c4252;
+            border-radius: 6px;
+        }
+
+        .adversary + .adversary,
+        .adjustment + .adjustment {
+            margin-top: 4px;
+        }
+
+        .adversary-name {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .adversary-name small {
+            display: block;
+            color: #a0aec0;
+            font-size: 0.8em;
+        }
+
+        .adversary-cost {
+            width: 44px;
+            color: #a0aec0;
+            font-size: 0.85em;
+            text-align: right;
+        }
+
+        .adversary-subtotal {
+            width: 44px;
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .stepper {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .stepper button {
+            width: 28px;
+            height: 28px;
+            background: #232735;
+            border: 1px solid #3c4252;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .stepper button:hover {
+            border-color: #E85D9E;
+        }
+
+        .stepper input {
+            width: 40px;
+            height: 28px;
+            padding: 0;
+            background: #12141c;
+            border: 1px solid #3c4252;
+            border-radius: 4px;
+            text-align: center;
+            appearance: textfield;
+            -moz-appearance: textfield;
+        }
+
+        .stepper input::-webkit-inner-spin-button,
+        .stepper input::-webkit-outer-spin-button {
+            margin: 0;
+            -webkit-appearance: none;
+        }
+
+        .base {
+            margin: 0 0 6px;
+            color: #a0aec0;
+        }
+
+        .adjustment {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            background: #171a23;
+            border: 1px solid #3c4252;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .adjustment input {
+            margin: 0;
+            accent-color: #E85D9E;
+        }
+
+        .adjustment-text {
+            flex: 1;
+        }
+
+        .adjustment-text small {
+            display: block;
+            color: #a0aec0;
+            font-size: 0.8em;
+        }
+
+        .adjustment-delta {
+            color: #a0aec0;
+            font-weight: 700;
+        }
+
+        .adjustment-locked {
+            cursor: default;
+        }
+
+        .adjustment-active {
+            border-color: #E85D9E;
+        }
+
+        .adjustment-active .adjustment-delta {
+            color: #E85D9E;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <header>
+            <h1>Calculadora de Combate</h1>
+            <button type="button" class="clear-btn" id="clear-btn" title="Limpa adversários e ajustes. Jogadores e patamar são mantidos.">Limpar</button>
+        </header>
+
+        <div class="party">
+            <div class="party-field" id="players-field">
+                <span>Jogadores</span>
+            </div>
+            <label class="party-field">
+                <span>Patamar dos jogadores</span>
+                <select id="tier-select">
+                    <option value="1">1 (nível 1)</option>
+                    <option value="2">2 (níveis 2 a 4)</option>
+                    <option value="3">3 (níveis 5 a 7)</option>
+                    <option value="4">4 (níveis 8 a 10)</option>
+                </select>
+            </label>
+        </div>
+
+        <section class="summary" aria-live="polite">
+            <div class="totals">
+                <div class="total"><strong id="budget-total">0</strong><small>PB disponíveis</small></div>
+                <div class="total"><strong id="spent-total">0</strong><small>PB gastos</small></div>
+                <div class="total"><strong id="remaining-total">0</strong><small>PB restantes</small></div>
+            </div>
+            <p class="status" id="status"></p>
+        </section>
+
+        <h2>Adversários</h2>
+        <div id="adversary-list"></div>
+
+        <h2>Ajustes de Pontos de Batalha</h2>
+        <p class="base" id="base-formula"></p>
+        <div id="adjustment-list"></div>
+    </main>
+    <script src="combat.js"></script>
+</body>
+</html>

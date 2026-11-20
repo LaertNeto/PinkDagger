@@ -851,6 +851,27 @@ body.dh-docked .dh-container {
     align-items: stretch;
 }
 
+/* As regras abaixo seguem a largura da própria ficha (não a da janela), que fica
+   estreita quando ela está fixada no canto da tela. Tooltips e modais ficam no
+   body, fora deste container, então o position: fixed deles não é afetado. */
+#dh-content-root {
+    container-type: inline-size;
+}
+
+/* Ficha estreita: Defesas e Experiências uma embaixo da outra */
+@container (max-width: 520px) {
+    #dh-content-root .dh-top-row-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* Ficha muito estreita: uma experiência por linha */
+@container (max-width: 340px) {
+    #dh-content-root .dh-experiences-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
 /* Bloco Unificado: Evasão + Limiares */
 .dh-defenses-box {
     background: #1b1f2b;

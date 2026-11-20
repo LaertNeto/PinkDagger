@@ -62,6 +62,7 @@ O PinkDagger resolve esses problemas injetando uma camada de interface rica e in
 - **Ferramentas Exclusivas para o Mestre (PNJs / Adversários)**:
   - **Importador Automático de PDF**: Copie o texto de um PNJ do livro de regras ou aventura em PDF e cole no PinkDagger. O parser reconhece automaticamente nome, tipo, dificuldade, limiares, vida, fadiga, ataques, experiências e habilidades!
   - Edição ágil de fichas de monstros e aliados sem sair da tela do jogo.
+  - **Calculadora de Combate**: Clique com o botão direito no ícone da extensão para planejar encontros com os Pontos de Batalha do livro.
 - **Sincronização Bidirecional**: As alterações feitas na interface do PinkDagger são refletidas instantaneamente nos atributos do Roll20 e vice-versa.
 
 ---
@@ -144,7 +145,24 @@ Como o PinkDagger é distribuído como código aberto, a instalação é feita d
 
 ## 🔄 Como Atualizar a Extensão
 
-Sempre que houver atualizações no repositório (novas versões ou correções de bugs):
+### Atualização com um clique (Windows)
+
+A extensão vem com um pequeno auxiliar que baixa a última versão do GitHub e substitui os arquivos da pasta para você. Ele só precisa ser instalado **uma vez**:
+
+1. Abra a pasta da extensão, entre em `updater` e dê dois cliques em **`instalar.bat`**.
+2. Recarregue a extensão uma vez em `chrome://extensions` (ou `edge://extensions`).
+
+A partir daí, para atualizar:
+
+1. Clique com o botão direito no ícone do PinkDagger > **Verificar atualizações**.
+2. Se houver versão nova, clique em **Atualizar agora**. A extensão baixa, instala e se recarrega sozinha.
+3. Dê <kbd>F5</kbd> na aba do Roll20.
+
+> O auxiliar fica em `%LOCALAPPDATA%\PinkDagger\updater` e só aceita chamadas da própria extensão. Antes de substituir os arquivos ele guarda um backup da versão anterior e o restaura se algo der errado. Para removê-lo, use o `desinstalar.bat` da mesma pasta.
+>
+> Se a pasta da extensão for um clone do repositório (`git`), o auxiliar não mexe nela: use `git pull`.
+
+### Atualização manual
 
 1. Atualize a sua pasta local:
    ```bash

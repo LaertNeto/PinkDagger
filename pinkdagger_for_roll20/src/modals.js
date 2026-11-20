@@ -399,8 +399,9 @@ function saveGeneralCardChanges(doc, abilIdx, rawName, newName, effectsList) {
     const saveBtn = targetAbil.querySelector('.saveabil');
     if (saveBtn) saveBtn.click();
 
-    setTimeout(() => {
-        populateDaggerheartData(doc);
+    // O nome da macro no Roll20 acompanha o nome novo da carta
+    setTimeout(async () => {
+        if (!(await syncCardMacroName(doc, rawName, newName))) populateDaggerheartData(doc);
     }, 150);
 }
 
@@ -524,8 +525,9 @@ function saveDomainChanges(doc, abilIdx, rawName, newName, newNivel, newCusto, n
     const saveBtn = targetAbil.querySelector('.saveabil');
     if (saveBtn) saveBtn.click();
 
-    setTimeout(() => {
-        populateDaggerheartData(doc);
+    // O nome da macro no Roll20 acompanha o nome novo da carta
+    setTimeout(async () => {
+        if (!(await syncCardMacroName(doc, rawName, newName))) populateDaggerheartData(doc);
     }, 150);
 }
 
