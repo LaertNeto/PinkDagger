@@ -469,6 +469,29 @@ async function saveCompanionAttackToRoll20(doc, attackMacroName, attackData) {
     populateDaggerheartData(doc);
 }
 
+// Renomeia a macro de uma carta (ex.: dom_Livro -> dom_Livro de Korvax) para acompanhar o
+// nome editado na ficha. Só vale para macros com prefixo de 3 letras; o prefixo é mantido.
+// Retorna true se renomeou (a renomeação já redesenha a ficha).
+async function syncCardMacroName(doc, rawName, newCardName) {
+    const prefixMatch = rawName.match(/^[a-z]{3}_/i);
+    const cardName = String(newCardName || '').replace(/\s+/g, ' ').trim();
+    if (!prefixMatch || !cardName || cardName.toLowerCase() === rawName.toLowerCase()) return false;
+
+    const newRawName = prefixMatch[0] + cardName;
+    if (newRawName === rawName) return false;
+
+    // Só a capitalização mudou: a "outra" macro com o mesmo nome é ela mesma
+    const onlyCaseChanged = newRawName.toLowerCase() === rawName.toLowerCase();
+    if (!onlyCaseChanged && abilityExistsInRoll20(doc, newRawName)) {
+        alert(`A carta foi salva, mas a macro continua como "${rawName}" porque já existe outra chamada "${newRawName}".`);
+        return false;
+    }
+
+    const renamed = await renameAbilityInRoll20(doc, rawName, newRawName);
+    if (!renamed) console.error(`Não foi possível renomear a macro "${rawName}" para "${newRawName}".`);
+    return true;
+}
+
 function abilityExistsInRoll20(doc, abilName) {
     const target = abilName.trim().toLowerCase();
     return Array.from(doc.querySelectorAll('.attributesabilities .abilities .abil')).some(abil => {
