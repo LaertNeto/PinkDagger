@@ -895,6 +895,7 @@ function populateDaggerheartData(doc) {
                         <div class="dh-choice-card-title">Personagem de Jogador (PC)</div>
                         <div class="dh-choice-card-desc">Ficha completa de herói com Atributos Principais, Rastreadores (Vida, Fadiga, Armadura, Esperança), Armas, Heranças, Classes, Domínio e Inventário.</div>
                         <button type="button" class="dh-choice-action-btn">Criar como Jogador (PC)</button>
+                        <button type="button" class="dh-choice-secondary-btn" id="dh-import-pc-pdf-btn" title="Preencher a ficha a partir do PDF da ficha oficial preenchível">📄 Importar de PDF</button>
                     </div>
                     <div class="dh-choice-card" id="dh-choose-npc-card">
                         <div class="dh-choice-icon">🐉</div>
@@ -924,6 +925,11 @@ function populateDaggerheartData(doc) {
                 </details>
             </div>
         `;
+
+        root.querySelector('#dh-import-pc-pdf-btn')?.addEventListener('click', (e) => {
+            e.stopPropagation(); // o clique no card cria a ficha vazia
+            openImportPcPdfModal(doc);
+        });
 
         root.querySelector('#dh-choose-pc-card')?.addEventListener('click', () => {
             addNewAttributeToRoll20(doc, 'pinkdagger_pc', null, '1', false, false, true);

@@ -59,6 +59,8 @@ const RULE_HIGHLIGHT_PARTS = [
     // Cartas em inglês: Spend a Hope, Mark a Stress, Spellcast Roll (15), advantage
     `(?:spend|mark|clear|gain|lose)\\s+(?:a|an|one|two|three|any\\s+number\\s+of|up\\s+to\\s+\\d+|${RULE_DICE}|\\d+)\\s+(?:hope|stress|hit\\s+points?|hp|armor\\s+slots?|fear|tokens?)`,
     `(?:spellcast|attack|reaction|agility|strength|finesse|instinct|presence|knowledge)\\s+rolls?(?:\\s*\\(\\s*\\d+\\s*\\))?`,
+    // Alcances em inglês depois de "within": "within Far range", "within Very Close range"
+    '(?<=within\\s+)(?:melee|very\\s+close|close|very\\s+far|far)(?:\\s+range)?',
     '(?:dis)?advantage',
     // Qualquer rolagem de dados (por último: dentro de "gaste 1d4 PF" o trecho inteiro já foi pego)
     RULE_DICE

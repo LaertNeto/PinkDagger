@@ -3757,3 +3757,54 @@ body.dh-docked .dh-container {
         max-width: 110px;
     }
 }
+
+/* Importar personagem de PDF */
+.dh-choice-secondary-btn {
+    width: 100%;
+    margin-top: 6px;
+    padding: 6px 18px;
+    background: transparent;
+    color: #E85D9E;
+    border: 1px dashed #E85D9E;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.8em;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dh-choice-secondary-btn:hover {
+    background: rgba(232, 93, 158, 0.15);
+    border-style: solid;
+}
+
+.dh-import-pdf-help {
+    color: #cbd5e0;
+    font-size: 0.85em;
+    line-height: 1.45;
+}
+
+.dh-import-pdf-summary:not(:empty) {
+    padding: 8px 10px;
+    background: #12141c;
+    border: 1px solid #3c4252;
+    border-left: 3px solid #E85D9E;
+    border-radius: 4px;
+    color: #e2e8f0;
+    font-size: 0.85em;
+    line-height: 1.5;
+}
+
+.dh-import-pdf-status {
+    min-height: 18px;
+    color: #f1c40f;
+    font-size: 0.84em;
+    font-weight: bold;
+}
+
+.dh-import-pdf-status--error {
+    color: #e74c3c;
+}

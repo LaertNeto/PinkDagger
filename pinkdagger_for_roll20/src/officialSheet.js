@@ -141,6 +141,20 @@ function getOfficialProficiencyHTML(profVal) {
     return `<div class="dh-of-prof" title="Proficiência ${profVal}"><span class="dh-of-pill">Proficiência</span><span class="dh-of-prof-dots">${dots}</span></div>`;
 }
 
+// "2d6 + 3 mágico" -> { formula: '2d6+3', type: 'mágico' }, como na ficha oficial (fórmula em cima, tipo embaixo).
+// Sem tipo depois da fórmula, o rótulo de baixo fica "Dano".
+function splitWeaponDamage(damageText) {
+    const text = String(damageText ?? '').trim();
+    const match = text.match(/^([\d\sd+\-−×x*()]+?)\s*(\p{L}[\p{L}\s.]*)?$/iu);
+    if (!match || !/\d*d\d+/i.test(match[1])) return { formula: text || '—', type: '' };
+    return { formula: match[1].replace(/\s+/g, ''), type: (match[2] || '').trim() };
+}
+
+function getOfficialDamageBoxHTML(damageText) {
+    const { formula, type } = splitWeaponDamage(damageText);
+    return `<span class="dh-of-stat-box"><strong>${formula}</strong><small>${type || 'Dano'}</small></span>`;
+}
+
 function getOfficialWeaponHTML(weapon, traitsMap) {
     const traitData = traitsMap[String(weapon.trait).toLowerCase()];
     const traitBox = traitData && traitData.exists
@@ -155,7 +169,7 @@ function getOfficialWeaponHTML(weapon, traitsMap) {
                 </div>
                 <div class="dh-of-weapon-stats">
                     ${traitBox}
-                    <span class="dh-of-stat-box"><strong>${weapon.damage}</strong><small>Dano</small></span>
+                    ${getOfficialDamageBoxHTML(weapon.damage)}
                     <button class="dh-weapon-edit-btn" data-abil-idx="${weapon.abilIdx}" data-card-fullname="${weapon.rawName}" title="Editar Arma">✏️</button>
                 </div>
             </div>
