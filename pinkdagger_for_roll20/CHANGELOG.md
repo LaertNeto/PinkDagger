@@ -9,6 +9,7 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 ### Novidades
 - **Calculadora de Combate:** clique com o botão direito no ícone da extensão para planejar encontros com os Pontos de Batalha do livro.
 - **Atualização com um clique (Windows):** clique com o botão direito no ícone da extensão > **Verificar atualizações**. A janela mostra a versão instalada, a mais recente e as novidades. Com o auxiliar instalado (`updater\instalar.bat`, uma vez só), o botão **Atualizar agora** baixa a última release do GitHub, substitui os arquivos e recarrega a extensão; depois é só dar F5 no Roll20.
+- **GM Roll:** novo botão **GM Roll** ao lado da ⚙️ na ficha. Ligado (em rosa), todas as rolagens feitas pela aba PinkDagger daquela ficha vão fechadas só para o mestre, como um `/w gm`, falando como o personagem. Fica salvo por ficha, no seu navegador, e não afeta outras pessoas que usam a mesma ficha. Fichas em pop-out sem a janela do Roll20 aberta não mostram o botão.
 
 ### Correções
 - O texto do **Inventário** e das caixas da aba **Textos** podia se perder: ele só era salvo ao sair da caixa, então fechar a ficha, dar F5, trocar de janela ou ter a ficha redesenhada com o cursor ainda nela descartava o que foi escrito. Agora o texto é salvo 1 segundo depois de parar de digitar, e também antes de a ficha ser redesenhada e quando a janela é fechada.

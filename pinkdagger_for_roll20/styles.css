@@ -52,6 +52,23 @@
     border-color: #E85D9E;
 }
 
+/* Toggle GM Roll: desligado fica discreto como os outros botões; ligado fica rosa */
+.dh-gmroll-btn {
+    color: #c9cdd8;
+    font-weight: bold;
+    font-size: 0.75em;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+
+.dh-gmroll-btn.dh-gmroll-on {
+    background: #E85D9E;
+    border-color: #E85D9E;
+    color: #fff;
+    filter: none;
+    opacity: 1;
+}
+
 /* Ficha fixada (dock): só a aba PinkDagger ocupa o iframe */
 body.dh-docked {
     overflow: hidden !important;

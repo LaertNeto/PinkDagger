@@ -15,12 +15,22 @@ function triggerRollForAbilityName(doc, targetName) {
     const abilityElements = doc.querySelectorAll('.attributesabilities .abilities .abil');
     let targetFound = false;
     const normalizedTarget = targetName.trim().toLowerCase();
+    const gmRoll = isGmRollEnabled(doc);
 
     abilityElements.forEach(abil => {
+        if (gmRoll && targetFound) return;
+
         const nameElem = abil.querySelector('.abilname');
-        const name = nameElem?.innerText?.trim().toLowerCase() || (abil.querySelector('input.abilname')?.value?.trim().toLowerCase() || '');
+        const originalName = nameElem?.innerText?.trim() || (abil.querySelector('input.abilname')?.value?.trim() || '');
+        const name = originalName.toLowerCase();
 
         if (name === normalizedTarget) {
+            // GM Roll: em vez do botão da macro (que rola para todos), sussurra a macro para o mestre
+            if (gmRoll) {
+                sendGmRoll(doc, originalName);
+                targetFound = true;
+                return;
+            }
             const rollBtn = abil.querySelector('button[type="roll"], .btn, a, [role="button"]') || nameElem;
             if (rollBtn) {
                 rollBtn.click();
