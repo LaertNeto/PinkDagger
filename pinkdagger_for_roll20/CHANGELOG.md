@@ -4,7 +4,7 @@ Todas as mudanças relevantes do **PinkDagger for Roll20** ficam registradas aqu
 
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e as versões seguem o [Versionamento Semântico](https://semver.org/lang/pt-BR/). As seções de cada versão são: **Novidades**, **Melhorias**, **Correções** e **Outros**.
 
-## [0.6.0] - não lançada
+## [0.6.0] - 2026-11-23
 
 ### Novidades
 - **Calculadora de Combate:** clique com o botão direito no ícone da extensão para planejar encontros com os Pontos de Batalha do livro.
