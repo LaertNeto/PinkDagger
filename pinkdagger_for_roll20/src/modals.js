@@ -25,10 +25,21 @@ function openEditWeaponModal(doc, abilIdx, rawName, weaponData) {
         <div class="dh-modal-box">
             <h3 class="dh-modal-title">Editar Arma: ${weaponData.title || 'Arma'}</h3>
             <div class="dh-modal-field">
+                <label>Nome da Arma:</label>
+                <input type="text" class="dh-modal-input" id="dh-edit-weapon-name" value="${escapeHtml(weaponData.title || '')}" placeholder="Nome da arma">
+            </div>
+            <div class="dh-modal-field">
                 <label>Atributo de Ataque:</label>
                 <select class="dh-modal-select" id="dh-edit-weapon-trait">
                     ${traitOptionsHTML}
                 </select>
+            </div>
+            <div class="dh-modal-field">
+                <label>Alcance:</label>
+                <input type="text" class="dh-modal-input" id="dh-edit-weapon-range" list="dh-weapon-range-options" value="${escapeHtml(weaponData.range || '')}" placeholder="Ex: Corpo a Corpo, Longe...">
+                <datalist id="dh-weapon-range-options">
+                    ${WEAPON_RANGES.map(range => `<option value="${range}"></option>`).join('')}
+                </datalist>
             </div>
             <div class="dh-modal-field">
                 <label>Fórmula de Dano:</label>
@@ -36,7 +47,7 @@ function openEditWeaponModal(doc, abilIdx, rawName, weaponData) {
             </div>
             <div class="dh-modal-field">
                 <label>Descrição / Efeito:</label>
-                <textarea class="dh-modal-textarea" id="dh-edit-weapon-desc" placeholder="Ex: Alcance corpo a corpo, efeito crítico...">${weaponData.desc || ''}</textarea>
+                <textarea class="dh-modal-textarea" id="dh-edit-weapon-desc" placeholder="Ex: Mágica, Duas Mãos, efeito crítico...">${weaponData.desc || ''}</textarea>
             </div>
             <div class="dh-modal-actions">
                 <button type="button" class="dh-modal-btn dh-modal-btn-cancel" id="dh-edit-weapon-cancel">Cancelar</button>
@@ -52,16 +63,19 @@ function openEditWeaponModal(doc, abilIdx, rawName, weaponData) {
     modalOverlay.querySelector('#dh-edit-weapon-cancel').addEventListener('click', closeModal);
 
     modalOverlay.querySelector('#dh-edit-weapon-save').addEventListener('click', () => {
+        // Nome vazio mantém o atual: a arma precisa de nome para a macro e para o card
+        const newName = modalOverlay.querySelector('#dh-edit-weapon-name').value.replace(/\s+/g, ' ').trim() || weaponData.title;
         const newTrait = modalOverlay.querySelector('#dh-edit-weapon-trait').value.trim();
+        const newRange = modalOverlay.querySelector('#dh-edit-weapon-range').value.trim();
         const newDamage = modalOverlay.querySelector('#dh-edit-weapon-damage').value.trim();
         const newDesc = modalOverlay.querySelector('#dh-edit-weapon-desc').value.trim();
 
-        saveWeaponChanges(doc, abilIdx, rawName, newTrait, newDamage, newDesc);
+        saveWeaponChanges(doc, abilIdx, rawName, newTrait, newDamage, newDesc, newRange, newName);
         closeModal();
     });
 }
 
-function saveWeaponChanges(doc, abilIdx, rawName, newTrait, newDamage, newDesc) {
+function saveWeaponChanges(doc, abilIdx, rawName, newTrait, newDamage, newDesc, newRange = '', newName = '') {
     const abilityElements = doc.querySelectorAll('.attributesabilities .abilities .abil');
     let targetAbil = abilityElements[abilIdx];
 
@@ -97,6 +111,30 @@ function saveWeaponChanges(doc, abilIdx, rawName, newTrait, newDamage, newDesc) 
         }
     }
 
+    // Nome: {{name=...}}, que é o título da rolagem no chat e do card
+    const fallbackTitle = rawName.startsWith('wea_') ? rawName.substring(4).trim() : rawName;
+    const weaponName = newName || fallbackTitle;
+    const nameRegex = /\{\{\s*name\s*=[\s\S]*?\}\}/i;
+    if (newName) {
+        const nameField = `{{name=${newName}\n}}`;
+        if (nameRegex.test(updatedMacro)) {
+            updatedMacro = updatedMacro.replace(nameRegex, () => nameField);
+        } else if (updatedMacro.includes('&{template:default}')) {
+            updatedMacro = updatedMacro.replace('&{template:default}', () => `&{template:default} ${nameField}`);
+        }
+    }
+
+    // Alcance: {{alcance=...}} logo depois do nome; vazio tira o campo da macro
+    const rangeField = `{{alcance=${newRange}\n}}`;
+    const rangeRegex = /\s*\{\{\s*(?:alcance|range)\s*=[\s\S]*?\}\}/i;
+    if (rangeRegex.test(updatedMacro)) {
+        updatedMacro = updatedMacro.replace(rangeRegex, () => (newRange ? ` ${rangeField}` : ''));
+    } else if (newRange) {
+        updatedMacro = nameRegex.test(updatedMacro)
+            ? updatedMacro.replace(nameRegex, (nameField) => `${nameField} ${rangeField}`)
+            : `${updatedMacro} ${rangeField}`;
+    }
+
     // 2. Atualiza Dano: {{dano=...}} ou {{damage=...}}
     if (/\{\{\s*(?:dano|damage)\s*=[\s\S]*?\}\}/i.test(updatedMacro)) {
         updatedMacro = updatedMacro.replace(/\{\{\s*(?:dano|damage)\s*=[\s\S]*?\}\}/i, `{{dano=${newDamage}\n}}`);
@@ -119,8 +157,7 @@ function saveWeaponChanges(doc, abilIdx, rawName, newTrait, newDamage, newDesc) 
 
     // Se o macro estava vazio ou sem template
     if (!updatedMacro.includes('&{template:default}')) {
-        const fallbackTitle = rawName.startsWith('wea_') ? rawName.substring(4).trim() : rawName;
-        updatedMacro = `#Atributo-${newTrait} &{template:default} {{name=${fallbackTitle}\n}} {{dano=${newDamage}\n}} {{desc=${newDesc}\n}}`;
+        updatedMacro = `#Atributo-${newTrait} &{template:default} {{name=${weaponName}\n}} ${newRange ? `${rangeField} ` : ''}{{dano=${newDamage}\n}} {{desc=${newDesc}\n}}`;
     }
 
     updateOriginalInput(macroTextarea, updatedMacro);
@@ -128,8 +165,9 @@ function saveWeaponChanges(doc, abilIdx, rawName, newTrait, newDamage, newDesc) 
     const saveBtn = targetAbil.querySelector('.saveabil');
     if (saveBtn) saveBtn.click();
 
-    setTimeout(() => {
-        populateDaggerheartData(doc);
+    // O nome da macro no Roll20 (wea_Nome) acompanha o nome novo da arma
+    setTimeout(async () => {
+        if (!(await syncCardMacroName(doc, rawName, weaponName, 'A arma'))) populateDaggerheartData(doc);
     }, 150);
 }
 
@@ -242,6 +280,87 @@ function openEditCompanionAttackModal(doc, attackMacroName, attackData) {
     });
 }
 
+// Campo "Link da imagem" dos modais de carta, com prévia
+function getCardImageFieldHTML(url = '') {
+    return `
+        <div class="dh-modal-field">
+            <label>Link da imagem ou GIF (opcional):</label>
+            <input type="url" class="dh-modal-input dh-card-image-input" value="${escapeHtml(url)}" placeholder="https://media.giphy.com/.../giphy.gif">
+            <div class="dh-settings-hint">Vai no fim da descrição como [x](link): o chat do Roll20 mostra a imagem ao usar a carta, e a ficha mostra no card.</div>
+            <div class="dh-card-image-preview">${url ? `<img src="${escapeHtml(url)}" alt="">` : ''}</div>
+        </div>
+    `;
+}
+
+function setupCardImageField(modalOverlay) {
+    const input = modalOverlay.querySelector('.dh-card-image-input');
+    const preview = modalOverlay.querySelector('.dh-card-image-preview');
+    input.addEventListener('input', () => {
+        const url = sanitizeCardImageUrl(input.value);
+        preview.innerHTML = url ? `<img src="${escapeHtml(url)}" alt="">` : '';
+    });
+}
+
+// Lê o link do modal. Retorna null (e avisa) quando há algo digitado que não é um link válido.
+function readCardImageField(modalOverlay) {
+    const raw = modalOverlay.querySelector('.dh-card-image-input').value.trim();
+    const url = sanitizeCardImageUrl(raw);
+    if (raw && !url) {
+        alert('O link da imagem precisa começar com http:// ou https:// e não pode ter espaços, aspas, parênteses ou chaves.');
+        return null;
+    }
+    return url;
+}
+
+// Seção "Contadores" dos modais de carta: nome + máximo; o valor atual é mantido ao salvar
+function getCounterEditorRowHTML(counter = { name: '', current: 0, max: 3 }) {
+    return `
+        <div class="dh-counter-edit-item" data-counter-current="${counter.current}">
+            <input type="text" class="dh-modal-input dh-counter-name-input" value="${escapeHtml(counter.name)}" placeholder="Nome (ex.: Fichas, Usos)">
+            <label class="dh-counter-max-label">Máx.
+                <input type="number" min="1" class="dh-modal-input dh-counter-max-input" value="${counter.max}">
+            </label>
+            <button type="button" class="dh-effect-remove-btn" title="Remover contador">🗑️</button>
+        </div>
+    `;
+}
+
+function getCounterEditorHTML(counters = []) {
+    return `
+        <div class="dh-modal-field">
+            <label>Contadores:</label>
+            <div class="dh-settings-hint">Fichas, usos ou cargas da carta, com − e + no card. O valor atual fica salvo na própria macro.</div>
+            <div class="dh-counter-edit-list">${counters.map(getCounterEditorRowHTML).join('')}</div>
+            <button type="button" class="dh-add-effect-btn dh-add-counter-btn">+ Adicionar Contador</button>
+        </div>
+    `;
+}
+
+function setupCounterEditor(modalOverlay) {
+    const list = modalOverlay.querySelector('.dh-counter-edit-list');
+    list.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.dh-effect-remove-btn');
+        if (removeBtn) removeBtn.closest('.dh-counter-edit-item').remove();
+    });
+    modalOverlay.querySelector('.dh-add-counter-btn').addEventListener('click', () => {
+        list.insertAdjacentHTML('beforeend', getCounterEditorRowHTML());
+        list.lastElementChild.querySelector('.dh-counter-name-input').focus();
+    });
+}
+
+// Lê os contadores do modal. "=", "{" e "}" quebrariam o campo da macro; nomes repetidos ficam só uma vez.
+function readCounterEditor(modalOverlay) {
+    const counters = [];
+    modalOverlay.querySelectorAll('.dh-counter-edit-item').forEach(item => {
+        const name = item.querySelector('.dh-counter-name-input').value.replace(/[={}]/g, '').replace(/\s+/g, ' ').trim();
+        if (!name || counters.some(c => c.name.toLowerCase() === name.toLowerCase())) return;
+        const max = Math.max(parseInt(item.querySelector('.dh-counter-max-input').value, 10) || 1, 1);
+        const current = Math.min(parseInt(item.getAttribute('data-counter-current'), 10) || 0, max);
+        counters.push({ name, current, max });
+    });
+    return counters;
+}
+
 function handleCardEditClick(doc, btn, abilityElements) {
     const abilIdx = parseInt(btn.getAttribute('data-abil-idx'), 10);
     const rawName = btn.getAttribute('data-card-fullname');
@@ -261,15 +380,19 @@ function handleCardEditClick(doc, btn, abilityElements) {
         cardTitle = rawName.substring(4).trim();
     }
 
-    const effectsList = fieldsList.filter(f => !f.isName);
+    // Contadores ({{Nome=atual/máximo}}) e o link da imagem ([x](url)) têm campos próprios no modal
+    const effectsList = fieldsList
+        .filter(f => !f.isName && !parseCardCounter(f.value))
+        .map(f => ({ ...f, value: stripCardImageLinks(f.value) }))
+        .filter(f => f.value || !getCardImageUrl(fieldsList.find(orig => orig.key === f.key)?.value));
     if (effectsList.length === 0) {
         effectsList.push({ key: 'Efeito', value: '' });
     }
 
-    openEditGeneralCardModal(doc, abilIdx, rawName, cardType, cardTitle, effectsList);
+    openEditGeneralCardModal(doc, abilIdx, rawName, cardType, cardTitle, effectsList, getCardCounters(macroContent), getCardImageUrl(macroContent));
 }
 
-function openEditGeneralCardModal(doc, abilIdx, rawName, cardType, cardTitle, effectsList) {
+function openEditGeneralCardModal(doc, abilIdx, rawName, cardType, cardTitle, effectsList, counters = [], imageUrl = '') {
     const existingModal = doc.getElementById('dh-general-card-edit-modal');
     if (existingModal) existingModal.remove();
 
@@ -296,6 +419,8 @@ function openEditGeneralCardModal(doc, abilIdx, rawName, cardType, cardTitle, ef
                 </div>
                 <button type="button" class="dh-add-effect-btn" id="dh-add-effect-btn">+ Adicionar Outro Efeito</button>
             </div>
+            ${getCardImageFieldHTML(imageUrl)}
+            ${getCounterEditorHTML(counters)}
             <div class="dh-modal-actions">
                 <button type="button" class="dh-modal-btn dh-modal-btn-cancel" id="dh-edit-card-cancel">Cancelar</button>
                 <button type="button" class="dh-modal-btn dh-modal-btn-save" id="dh-edit-card-save">Salvar</button>
@@ -307,6 +432,8 @@ function openEditGeneralCardModal(doc, abilIdx, rawName, cardType, cardTitle, ef
 
     const effectsContainer = modalOverlay.querySelector('#dh-effects-container');
     const addEffectBtn = modalOverlay.querySelector('#dh-add-effect-btn');
+    setupCounterEditor(modalOverlay);
+    setupCardImageField(modalOverlay);
 
     function attachRemoveListeners() {
         effectsContainer.querySelectorAll('.dh-effect-remove-btn').forEach(btn => {
@@ -334,6 +461,8 @@ function openEditGeneralCardModal(doc, abilIdx, rawName, cardType, cardTitle, ef
 
     modalOverlay.querySelector('#dh-edit-card-save').addEventListener('click', () => {
         const newName = modalOverlay.querySelector('#dh-edit-card-name').value.trim() || cardTitle || rawName;
+        const newImage = readCardImageField(modalOverlay);
+        if (newImage === null) return;
 
         const updatedEffects = [];
         effectsContainer.querySelectorAll('.dh-effect-item').forEach(item => {
@@ -346,7 +475,14 @@ function openEditGeneralCardModal(doc, abilIdx, rawName, cardType, cardTitle, ef
             }
         });
 
-        saveGeneralCardChanges(doc, abilIdx, rawName, newName, updatedEffects);
+        // O link da imagem vai no fim do último efeito (a "descrição" da carta)
+        if (newImage) {
+            if (updatedEffects.length === 0) updatedEffects.push({ key: 'Efeito', val: '' });
+            const last = updatedEffects[updatedEffects.length - 1];
+            last.val = withCardImageLink(last.val, newImage);
+        }
+
+        saveGeneralCardChanges(doc, abilIdx, rawName, newName, updatedEffects, readCounterEditor(modalOverlay));
         closeModal();
     });
 }
@@ -364,7 +500,7 @@ function createEffectItemHTML(index, key, value) {
     `;
 }
 
-function saveGeneralCardChanges(doc, abilIdx, rawName, newName, effectsList) {
+function saveGeneralCardChanges(doc, abilIdx, rawName, newName, effectsList, counters = []) {
     const abilityElements = doc.querySelectorAll('.attributesabilities .abilities .abil');
     let targetAbil = abilityElements[abilIdx];
 
@@ -393,6 +529,7 @@ function saveGeneralCardChanges(doc, abilIdx, rawName, newName, effectsList) {
     effectsList.forEach(eff => {
         updatedMacro += ` {{${eff.key}=${eff.val}\n}}`;
     });
+    updatedMacro = setCardCounterFields(updatedMacro, counters);
 
     updateOriginalInput(macroTextarea, updatedMacro);
 
@@ -434,6 +571,8 @@ function openEditDomainModal(doc, abilIdx, rawName, domainData) {
                 <label>Descrição / Efeito:</label>
                 <textarea class="dh-modal-textarea" id="dh-edit-domain-desc" placeholder="O que a carta de domínio faz...">${domainData.desc || ''}</textarea>
             </div>
+            ${getCardImageFieldHTML(domainData.image || '')}
+            ${getCounterEditorHTML(domainData.counters || [])}
             <div class="dh-modal-actions">
                 <button type="button" class="dh-modal-btn dh-modal-btn-cancel" id="dh-edit-domain-cancel">Cancelar</button>
                 <button type="button" class="dh-modal-btn dh-modal-btn-save" id="dh-edit-domain-save">Salvar</button>
@@ -446,19 +585,23 @@ function openEditDomainModal(doc, abilIdx, rawName, domainData) {
     const closeModal = () => modalOverlay.remove();
 
     modalOverlay.querySelector('#dh-edit-domain-cancel').addEventListener('click', closeModal);
+    setupCounterEditor(modalOverlay);
+    setupCardImageField(modalOverlay);
 
     modalOverlay.querySelector('#dh-edit-domain-save').addEventListener('click', () => {
         const newName = modalOverlay.querySelector('#dh-edit-domain-name').value.trim() || domainData.name || rawName;
         const newNivel = modalOverlay.querySelector('#dh-edit-domain-nivel').value.trim() || '1';
         const newCusto = modalOverlay.querySelector('#dh-edit-domain-custo').value.trim() || '0';
-        const newDesc = modalOverlay.querySelector('#dh-edit-domain-desc').value.trim();
+        const newImage = readCardImageField(modalOverlay);
+        if (newImage === null) return;
+        const newDesc = withCardImageLink(modalOverlay.querySelector('#dh-edit-domain-desc').value, newImage);
 
-        saveDomainChanges(doc, abilIdx, rawName, newName, newNivel, newCusto, newDesc);
+        saveDomainChanges(doc, abilIdx, rawName, newName, newNivel, newCusto, newDesc, readCounterEditor(modalOverlay));
         closeModal();
     });
 }
 
-function saveDomainChanges(doc, abilIdx, rawName, newName, newNivel, newCusto, newDesc) {
+function saveDomainChanges(doc, abilIdx, rawName, newName, newNivel, newCusto, newDesc, counters = null) {
     const abilityElements = doc.querySelectorAll('.attributesabilities .abilities .abil');
     let targetAbil = abilityElements[abilIdx];
 
@@ -519,6 +662,9 @@ function saveDomainChanges(doc, abilIdx, rawName, newName, newNivel, newCusto, n
     if (!updatedMacro.includes('&{template:default}')) {
         updatedMacro = `&{template:default} {{name=${newName}\n}} {{Nível=${newNivel}\n}} {{Custo=${newCusto}\n}} {{Descrição=${newDesc}\n}}`;
     }
+
+    // Contadores: null (chamada sem o modal) deixa os que já estão na macro
+    if (counters) updatedMacro = setCardCounterFields(updatedMacro, counters);
 
     updateOriginalInput(macroTextarea, updatedMacro);
 
@@ -663,7 +809,7 @@ function collectDomainAndVaultCards(doc) {
             name: fields['name'] ? formatTextWithNewlines(fields['name']) : rawName.substring(4).trim(),
             nivel: nivel ? formatTextWithNewlines(nivel) : '-',
             custo: fields['custo'] ? formatTextWithNewlines(fields['custo']) : '-',
-            desc: desc ? formatTextWithNewlines(desc) : 'Sem descrição.'
+            desc: formatCardText(stripCardImageLinks(desc)) || 'Sem descrição.'
         };
         (isActive ? cards.active : cards.vault).push(card);
     });
@@ -784,15 +930,19 @@ function openSettingsModal(doc) {
         <div class="dh-modal-box">
             <h3 class="dh-modal-title">⚙️ Configurações</h3>
             <div class="dh-settings-group">
-                <div class="dh-settings-label">Visualização dos cards</div>
-                <div class="dh-settings-hint">Personagem: Ancestralidade, Comunidade, Classe, Subclasse, Esperança, Armas e Cartas de Domínio. Companheiro e NPC: Habilidades.</div>
+                <div class="dh-settings-label">Visualização da ficha</div>
+                <div class="dh-settings-hint">Vale para todas as fichas neste navegador. A Oficial muda só a ficha de Personagem; Companheiro e NPC continuam na Clássica.</div>
                 <label class="dh-settings-option">
                     <input type="radio" name="dh-card-view" value="detailed" ${settings.cardView === 'detailed' ? 'checked' : ''}>
-                    <span><strong>Detalhado</strong><small>Mostra todas as informações direto no card.</small></span>
+                    <span><strong>Clássico</strong><small>Layout PinkDagger, com todas as informações direto nos cards.</small></span>
                 </label>
                 <label class="dh-settings-option">
                     <input type="radio" name="dh-card-view" value="simple" ${settings.cardView === 'simple' ? 'checked' : ''}>
-                    <span><strong>Simplificado</strong><small>Mostra só o nome; o card completo aparece ao passar o mouse.</small></span>
+                    <span><strong>Simplificado</strong><small>Layout PinkDagger com os cards mostrando só o nome; o card completo aparece ao passar o mouse.</small></span>
+                </label>
+                <label class="dh-settings-option">
+                    <input type="radio" name="dh-card-view" value="official" ${settings.cardView === 'official' ? 'checked' : ''}>
+                    <span><strong>Oficial</strong><small>Layout no estilo da ficha digital oficial de Daggerheart: atributos em flâmulas, Vida, Armas e Esperança lado a lado e abas embaixo.</small></span>
                 </label>
             </div>
             <div class="dh-modal-actions">

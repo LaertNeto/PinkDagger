@@ -49,8 +49,12 @@
         "src/utils.js",
         "src/npcParser.js",
         "src/roll20.js",
+        "src/gmroll.js",
         "src/modals.js",
+        "src/pdfForm.js",
+        "src/pdfImport.js",
         "src/sheet.js",
+        "src/officialSheet.js",
         "src/companion.js",
         "src/dock.js",
         "content.js"

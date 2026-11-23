@@ -54,9 +54,11 @@
                     <h2 id="dh-char-name">PinkDagger</h2>
                     <div class="dh-title-actions">
                         <div class="dh-header-meta">
+                            <span class="dh-header-domains" title="Clique para escrever os domínios">Domínios: <strong id="dh-char-domains">-</strong></span>
                             <span>Nível: <strong id="dh-char-nivel">-</strong></span>
                             <span>Proficiência: <strong id="dh-char-prof">-</strong></span>
                         </div>
+                        <button type="button" class="dh-title-btn dh-gmroll-btn" id="dh-gmroll-btn" aria-pressed="false">GM Roll</button>
                         <button type="button" class="dh-title-btn" id="dh-settings-btn" title="Configurações">⚙️</button>
                         <button type="button" class="dh-title-btn" id="dh-dock-btn" title="Fixar ficha no canto da tela">📌</button>
                     </div>
@@ -71,6 +73,8 @@
             e.stopPropagation();
             openSettingsModal(doc);
         });
+
+        setupGmRollButton(doc, daggerheartPane.querySelector('#dh-gmroll-btn'));
 
         // O dock só funciona para fichas abertas em janela dentro do Roll20 (não em pop-out)
         const dockBtn = daggerheartPane.querySelector('#dh-dock-btn');
@@ -101,6 +105,7 @@
             daggerheartPane.style.display = 'block';
             daggerheartPane.classList.add('active');
 
+            updateGmRollButton(doc);
             populateDaggerheartData(doc);
         });
 

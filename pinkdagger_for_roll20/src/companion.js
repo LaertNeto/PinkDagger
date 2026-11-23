@@ -8,6 +8,8 @@ function renderCompanionSheet(doc, root, stats) {
     if (headerMeta) headerMeta.style.display = 'flex';
     const nivelElem = doc.getElementById('dh-char-nivel');
     if (nivelElem) nivelElem.parentElement.style.display = 'none';
+    const domainsElem = doc.getElementById('dh-char-domains');
+    if (domainsElem) domainsElem.parentElement.style.display = 'none';
     const profElem = doc.getElementById('dh-char-prof');
     if (profElem) {
         if (profVal !== null) {
@@ -124,10 +126,10 @@ function renderCompanionSheet(doc, root, stats) {
             Object.keys(fields).forEach(key => {
                 if (key === 'name') return;
                 if (key === '__raw_desc__' || key === 'desc' || key === 'descrição' || key === 'descricao' || key === 'efeito') {
-                    effectsHTML += `<div class="dh-heritage-effect">${formatTextWithNewlines(fields[key])}</div>`;
+                    effectsHTML += `<div class="dh-heritage-effect">${formatCardText(fields[key])}</div>`;
                 } else {
                     const formattedKey = key.charAt(0).toUpperCase() + key.slice(1);
-                    effectsHTML += `<div class="dh-heritage-effect"><span class="dh-heritage-effect-name">${formattedKey}:</span>${formatTextWithNewlines(fields[key])}</div>`;
+                    effectsHTML += `<div class="dh-heritage-effect"><span class="dh-heritage-effect-name">${formattedKey}:</span>${formatCardText(fields[key])}</div>`;
                 }
             });
             abilityCardsHTML += `
