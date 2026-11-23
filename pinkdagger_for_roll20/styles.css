@@ -104,6 +104,38 @@ body.dh-docked .dh-container {
     color: #f1c40f;
 }
 
+/* Topo estreito (ex.: ficha fixada no canto): os itens quebram de linha em vez de sair da caixa */
+.dh-title-bar {
+    flex-wrap: wrap;
+    gap: 6px 12px;
+}
+
+.dh-title-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 4px;
+    margin-left: auto;
+}
+
+.dh-header-meta {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 2px;
+}
+
+.dh-header-meta > span {
+    white-space: nowrap;
+}
+
+/* Domínios no topo: clicar abre a caixa para escrever os dois */
+.dh-header-domains {
+    cursor: pointer;
+}
+
+.dh-header-domains:hover strong {
+    color: #E85D9E;
+}
+
 /* Abas internas da ficha (Ficha / Textos) */
 .dh-sheet-tabs {
     display: flex;
@@ -1292,6 +1324,19 @@ body.dh-docked .dh-container {
     letter-spacing: 0.5px;
 }
 
+.dh-weapon-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+}
+
+.dh-weapon-range-tag {
+    color: #5dade2;
+    background: rgba(93, 173, 226, 0.15);
+    border-color: rgba(93, 173, 226, 0.4);
+}
+
 .dh-weapon-damage-tag {
     font-size: 0.85em;
     font-weight: bold;
@@ -1948,4 +1993,1767 @@ body.dh-docked .dh-container {
     width: 100%;
     box-sizing: border-box;
     cursor: pointer;
+}
+
+/* ==========================================================================
+   Visualização Oficial (ficha de Personagem)
+   Layout no estilo da ficha digital oficial de Daggerheart. Tudo fica dentro
+   de .dh-of e sobrescreve o visual Clássico dos mesmos componentes.
+   ========================================================================== */
+.dh-of {
+    --of-gold: #f3c267;
+    --of-orange: #e38c3e;
+    --of-purple: #38227b;
+    --of-purple-mid: #2a1757;
+    --of-purple-deep: #160c2b;
+    --of-paper: #f2f3f4;
+    --of-ink: #1a1a1a;
+    --of-navy: #1f2350;
+    --of-grey: #6b6b73;
+    --of-display: 'Cinzel', 'Trajan Pro', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+    --of-heading: 'Bahnschrift', 'Oswald', 'Arial Narrow', 'Segoe UI', sans-serif;
+    --of-body: 'Yrsa', Georgia, 'Times New Roman', serif;
+    --of-num: 'Overpass', 'Segoe UI', Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--of-body);
+    color: #fff;
+}
+
+.dh-of button {
+    font-family: var(--of-heading);
+}
+
+/* --- Moldura de cima: identidade, defesas, atributos e colunas --- */
+.dh-of-frame {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 14px 16px 16px;
+    background:
+        radial-gradient(ellipse at 75% -10%, rgba(232, 93, 158, 0.22), transparent 55%),
+        linear-gradient(160deg, var(--of-purple-mid) 0%, var(--of-purple-deep) 60%, #0e0819 100%);
+    border: 2px solid var(--of-gold);
+    border-radius: 10px;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6), 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+.dh-of-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.dh-of-identity {
+    min-width: 0;
+}
+
+.dh-of-name {
+    font-family: var(--of-display);
+    font-size: 1.9em;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #fff;
+    overflow-wrap: anywhere;
+}
+
+.dh-of-subtitle {
+    margin-top: 2px;
+    font-family: var(--of-heading);
+    font-size: 0.8em;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--of-gold);
+}
+
+.dh-of-subtitle-sub {
+    color: #fff;
+    opacity: 0.85;
+}
+
+.dh-of-level {
+    flex-shrink: 0;
+}
+
+/* Rótulo preto com borda dourada (usado nos escudos, proficiência e recursos) */
+.dh-of-pill {
+    display: inline-block;
+    background: #000;
+    color: #fff;
+    border: 1px solid var(--of-gold);
+    border-radius: 10px;
+    padding: 1px 8px;
+    font-family: var(--of-heading);
+    font-size: 0.66em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* --- Escudos (Evasão, Armadura, Nível) --- */
+.dh-of-shield-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+/* O contorno dourado vem do drop-shadow: o clip-path cortaria uma borda comum */
+.dh-of-shield-outline,
+.dh-of-pennant-outline {
+    filter:
+        drop-shadow(2px 0 0 var(--of-gold))
+        drop-shadow(-2px 0 0 var(--of-gold))
+        drop-shadow(0 2px 0 var(--of-gold))
+        drop-shadow(0 -2px 0 var(--of-gold));
+}
+
+.dh-of-shield {
+    width: 54px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 6px;
+    box-sizing: border-box;
+    background: #fff;
+    color: #000;
+    clip-path: polygon(0 0, 100% 0, 100% 62%, 50% 100%, 0 62%);
+}
+
+.dh-of .dh-of-shield-val {
+    color: #000;
+    font-family: var(--of-num);
+    font-size: 1.6em;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.dh-of-muted {
+    color: #9aa0aa;
+}
+
+.dh-of-shield-wrap .dh-of-pill {
+    margin-top: -9px;
+    position: relative;
+}
+
+/* Botões −/+ dos escudos e limiares: aparecem ao passar o mouse */
+.dh-of-spin {
+    display: flex;
+    gap: 3px;
+    margin-top: 3px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.dh-of-shield-wrap:hover .dh-of-spin,
+.dh-of-shield-wrap:focus-within .dh-of-spin,
+.dh-of-threshold-val:hover .dh-of-spin,
+.dh-of-threshold-val:focus-within .dh-of-spin {
+    opacity: 1;
+}
+
+.dh-of .dh-defense-spin-btn {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--of-grey);
+    border: 1px solid #3d3d44;
+    color: #fff;
+    font-size: 12px;
+}
+
+.dh-of .dh-defense-spin-btn:hover {
+    background: var(--of-gold);
+    border-color: var(--of-gold);
+    color: #000;
+}
+
+/* --- Linha de defesas + atributos --- */
+.dh-of-core {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+}
+
+.dh-of-defense {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.dh-of-shields {
+    display: flex;
+    gap: 14px;
+}
+
+.dh-of-traits {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.dh-of .dh-of-trait {
+    background: none;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.dh-of .dh-of-trait:hover {
+    background: none;
+    transform: translateY(-2px);
+}
+
+.dh-of .dh-of-trait .dh-trait-name {
+    position: relative;
+    z-index: 1;
+    margin-bottom: -12px;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background: #000;
+    color: #fff;
+    border: 1px solid var(--of-gold);
+    border-radius: 10px;
+    padding: 1px 7px;
+    font-family: var(--of-heading);
+    font-size: 0.66em;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.dh-of .dh-of-trait .dh-of-pennant-outline {
+    width: 100%;
+    max-width: 64px;
+}
+
+.dh-of .dh-of-pennant {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0 6px;
+    box-sizing: border-box;
+    background: #fff;
+    color: #000;
+    font-family: var(--of-num);
+    font-size: 1.5em;
+    font-weight: 800;
+    clip-path: polygon(0 0, 100% 0, 100% 75%, 50% 100%, 0 75%);
+}
+
+.dh-of .dh-of-trait:hover .dh-of-pennant {
+    background: #fff6df;
+}
+
+.dh-of-trait-verbs {
+    color: #e9e4f5;
+    font-size: 0.74em;
+    line-height: 1.25;
+    text-align: center;
+}
+
+/* --- Recursos com marcadores --- */
+.dh-of .dh-of-track {
+    background: #fff;
+    color: var(--of-ink);
+    border: 2px solid var(--of-gold);
+    border-radius: 6px;
+    padding: 0 0 6px;
+    gap: 6px;
+    overflow: hidden;
+}
+
+.dh-of .dh-of-track .dh-stat-header {
+    justify-content: center;
+    position: relative;
+    background: var(--of-purple);
+    padding: 2px 8px;
+}
+
+.dh-of .dh-of-track .dh-stat-label {
+    color: #fff;
+    font-family: var(--of-heading);
+    font-size: 0.72em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.dh-of .dh-of-track .dh-stat-value {
+    position: absolute;
+    right: 8px;
+    color: var(--of-gold);
+    font-family: var(--of-heading);
+    font-size: 0.68em;
+    font-weight: 700;
+}
+
+.dh-of .dh-of-track .dh-add-missing-btn {
+    position: absolute;
+    right: 6px;
+    padding: 0 6px;
+    font-size: 0.7em;
+}
+
+.dh-of .dh-of-track .dh-tracker-bar {
+    padding: 0 6px;
+    gap: 6px;
+}
+
+.dh-of .dh-of-track .dh-dots-container {
+    flex: 1;
+    justify-content: center;
+    gap: 5px;
+    padding: 2px 0;
+}
+
+/* PV e Fadiga: caixinhas ligadas por uma linha */
+.dh-of .dh-of-track--boxes .dh-dots-container {
+    background: linear-gradient(var(--of-navy), var(--of-navy)) center / 100% 2px no-repeat;
+}
+
+.dh-of .dh-of-track--boxes .dh-dot,
+.dh-of .dh-of-track--boxes .dh-dot.inactive {
+    width: 13px;
+    height: 9px;
+    border-radius: 2px;
+    border: 1.5px solid var(--of-navy);
+    background: #fff;
+    box-shadow: none;
+}
+
+.dh-of .dh-of-track--boxes .dh-dot.active {
+    background: var(--of-purple);
+    border-color: var(--of-purple);
+    box-shadow: none;
+}
+
+/* Espaços de Armadura: quadradinhos sobre a moldura roxa */
+.dh-of .dh-of-track--slots {
+    background: transparent;
+    border: none;
+    padding: 0;
+    gap: 4px;
+}
+
+.dh-of .dh-of-track--slots .dh-stat-header {
+    background: #000;
+    border: 1px solid var(--of-gold);
+    border-radius: 10px;
+    padding: 1px 46px 1px 10px;
+}
+
+.dh-of .dh-of-track--slots .dh-stat-label {
+    font-size: 0.66em;
+}
+
+.dh-of .dh-of-track--slots .dh-dot,
+.dh-of .dh-of-track--slots .dh-dot.inactive {
+    width: 11px;
+    height: 11px;
+    border-radius: 2px;
+    border: 1.5px solid var(--of-gold);
+    background: #000;
+    box-shadow: none;
+}
+
+.dh-of .dh-of-track--slots .dh-dot.active {
+    background: var(--of-gold);
+    box-shadow: 0 0 4px rgba(243, 194, 103, 0.7);
+}
+
+/* Esperança: losangos dourados numa faixa escura */
+.dh-of .dh-of-track--diamonds {
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+.dh-of .dh-of-track--diamonds .dh-stat-header {
+    background: transparent;
+    padding: 0 4px;
+    min-height: 14px;
+}
+
+.dh-of .dh-of-track--diamonds .dh-stat-label {
+    display: none;
+}
+
+.dh-of .dh-of-track--diamonds .dh-dots-container {
+    background: var(--of-purple);
+    border: 1px solid var(--of-gold);
+    border-radius: 14px;
+    padding: 7px 10px;
+    gap: 10px;
+}
+
+.dh-of .dh-of-track--diamonds .dh-dot,
+.dh-of .dh-of-track--diamonds .dh-dot.inactive {
+    width: 13px;
+    height: 13px;
+    border-radius: 2px;
+    transform: rotate(45deg);
+    border: 2px solid var(--of-gold);
+    background: #000;
+    box-shadow: none;
+}
+
+.dh-of .dh-of-track--diamonds .dh-dot.active {
+    background: var(--of-gold);
+    box-shadow: 0 0 6px rgba(243, 194, 103, 0.8);
+}
+
+/* --- Três colunas: Vida e Fadiga | Armas | Esperança e Experiências --- */
+.dh-of-columns {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    align-items: start;
+}
+
+.dh-of-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+/* Título em faixa preta com pontas em losango */
+.dh-of-bar-title {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 22px;
+    padding: 2px 34px;
+    background: #000;
+    border: 1px solid var(--of-gold);
+    border-radius: 12px;
+    color: #fff;
+    font-family: var(--of-heading);
+    font-size: 0.75em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+.dh-of-bar-title::before,
+.dh-of-bar-title::after,
+.dh-of .dh-section-title::before,
+.dh-of .dh-section-title::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    background: var(--of-orange);
+    transform: translateY(-50%) rotate(45deg);
+}
+
+.dh-of-bar-title::before,
+.dh-of .dh-section-title::before {
+    left: -5px;
+}
+
+.dh-of-bar-title::after,
+.dh-of .dh-section-title::after {
+    right: -5px;
+}
+
+.dh-of-bar-actions {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 4px;
+}
+
+.dh-of .dh-add-btn {
+    width: 18px;
+    height: 18px;
+    font-size: 12px;
+    background: #000;
+    color: var(--of-gold);
+    border-color: var(--of-gold);
+}
+
+.dh-of .dh-add-btn--labeled {
+    flex-direction: row;
+    width: auto;
+    padding: 0 5px;
+    gap: 1px;
+}
+
+.dh-of .dh-add-btn--labeled .dh-add-btn-label {
+    font-size: 9px;
+}
+
+/* Título com vários botões: o texto vai para a esquerda e os botões ficam no fluxo */
+.dh-of-bar-title--many-actions {
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    padding: 2px 10px 2px 16px;
+}
+
+.dh-of-bar-title--many-actions .dh-of-bar-actions {
+    position: static;
+    transform: none;
+    flex-wrap: wrap;
+}
+
+.dh-of .dh-add-btn:hover {
+    background: var(--of-gold);
+    color: #000;
+}
+
+.dh-of-empty {
+    color: #a49dbb;
+    font-size: 0.8em;
+    font-style: italic;
+    text-align: center;
+    padding: 6px;
+}
+
+.dh-of-paper .dh-of-empty {
+    color: #718096;
+}
+
+/* Limiares de dano */
+.dh-of-thresholds {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 4px;
+    padding: 5px 4px;
+    background: var(--of-purple);
+    border: 1px solid var(--of-gold);
+    border-radius: 6px;
+}
+
+.dh-of-threshold-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-width: 0;
+}
+
+.dh-of-threshold-label strong {
+    font-family: var(--of-heading);
+    font-size: 0.66em;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #fff;
+}
+
+.dh-of-threshold-label small {
+    font-size: 0.66em;
+    color: #d6cdf0;
+}
+
+.dh-of-threshold-val {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.dh-of-threshold-val .dh-defense-val {
+    min-width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    color: #000;
+    border: 2px solid var(--of-gold);
+    font-family: var(--of-num);
+    font-size: 1em;
+    font-weight: 800;
+    box-sizing: border-box;
+}
+
+.dh-of-threshold-val .dh-of-spin {
+    position: absolute;
+    top: 100%;
+    z-index: 2;
+}
+
+/* Proficiência e armas */
+.dh-of-prof {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.dh-of-prof-dots {
+    display: flex;
+    gap: 4px;
+}
+
+.dh-of-prof-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 1.5px solid var(--of-gold);
+    background: #000;
+}
+
+.dh-of-prof-dot--on {
+    background: var(--of-gold);
+}
+
+.dh-of-weapons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dh-of .dh-of-weapon {
+    background: #fff;
+    color: var(--of-ink);
+    border: 2px solid var(--of-gold);
+    border-top: 2px solid var(--of-gold);
+    border-radius: 8px;
+    padding: 0;
+    gap: 0;
+    box-shadow: none;
+    overflow: hidden;
+}
+
+.dh-of .dh-of-weapon:hover {
+    background: #fff;
+    border-color: var(--of-orange);
+    transform: none;
+    box-shadow: 0 0 0 2px rgba(243, 194, 103, 0.45);
+}
+
+.dh-of-weapon-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 8px;
+}
+
+.dh-of-weapon-id {
+    min-width: 0;
+}
+
+.dh-of-weapon-name {
+    min-width: 0;
+    font-family: var(--of-heading);
+    font-size: 0.85em;
+    font-weight: 700;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+}
+
+.dh-of-weapon-range {
+    margin-top: 1px;
+    color: #666;
+    font-family: var(--of-heading);
+    font-size: 0.6em;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.dh-of-weapon-stats {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.dh-of-stat-box {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    min-height: 30px;
+    padding: 2px 6px;
+    box-sizing: border-box;
+    background: #fff;
+    border: 1px solid #9aa0aa;
+    border-radius: 4px;
+}
+
+.dh-of-stat-box strong {
+    font-family: var(--of-num);
+    font-size: 0.85em;
+    line-height: 1.1;
+}
+
+.dh-of-stat-box small {
+    font-family: var(--of-heading);
+    font-size: 0.55em;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #555;
+}
+
+.dh-of .dh-weapon-edit-btn,
+.dh-of .dh-card-edit-btn {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+}
+
+.dh-of-weapon-feature {
+    background: #111;
+    color: #cfd2da;
+    font-size: 0.75em;
+    line-height: 1.35;
+    padding: 5px 10px;
+    text-align: center;
+    white-space: pre-wrap;
+}
+
+/* Experiências: caixa clara com título sobreposto à borda */
+.dh-of-exp-box {
+    position: relative;
+    margin-top: 12px;
+    padding: 16px 8px 6px;
+    background: var(--of-paper);
+    border: 2px solid var(--of-gold);
+    border-radius: 0 0 8px 8px;
+}
+
+.dh-of-exp-box > .dh-of-bar-title {
+    position: absolute;
+    top: -12px;
+    left: 16px;
+    right: 16px;
+}
+
+.dh-of #dh-experiences-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.dh-of .dh-exp-card {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--of-gold);
+    border-radius: 0;
+    padding: 5px 4px;
+    gap: 8px;
+}
+
+.dh-of .dh-exp-card:last-child {
+    border-bottom: none;
+}
+
+.dh-of .dh-exp-card:hover {
+    background: rgba(243, 194, 103, 0.2);
+    transform: none;
+}
+
+.dh-of .dh-exp-name {
+    color: var(--of-ink);
+    font-family: var(--of-heading);
+    font-size: 0.75em;
+}
+
+.dh-of .dh-exp-mod {
+    flex-shrink: 0;
+    color: var(--of-ink);
+    background: #fff;
+    border: 1px solid #9aa0aa;
+    border-radius: 3px;
+    padding: 0 6px;
+    font-family: var(--of-num);
+    font-size: 0.75em;
+}
+
+.dh-of .dh-of-exp-list .dh-of-empty {
+    color: #718096;
+}
+
+/* Recursos personalizados */
+.dh-of-resources {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dh-of-resources .dh-custom-stats-grid {
+    margin-bottom: 0;
+}
+
+.dh-of .dh-custom-stat-box {
+    background: #fff;
+    border: 2px solid var(--of-gold);
+    color: var(--of-ink);
+}
+
+.dh-of .dh-custom-stat-label {
+    color: var(--of-purple);
+    font-family: var(--of-heading);
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+/* --- Abas de baixo --- */
+.dh-of .dh-of-tabs {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin: 12px 0 -12px;
+    padding: 0 8px;
+    border: none;
+}
+
+.dh-of .dh-of-tabs .dh-sheet-tab {
+    margin: 0;
+    padding: 4px 14px;
+    background: #000;
+    color: #fff;
+    border: 1px solid var(--of-gold);
+    border-radius: 12px;
+    font-size: 0.72em;
+    letter-spacing: 0.08em;
+}
+
+.dh-of .dh-of-tabs .dh-sheet-tab:hover {
+    color: var(--of-gold);
+}
+
+.dh-of .dh-of-tabs .dh-sheet-tab--active,
+.dh-of .dh-of-tabs .dh-sheet-tab--active:hover {
+    background: var(--of-purple);
+    color: #fff;
+    border-color: var(--of-gold);
+    box-shadow: 0 0 0 2px rgba(243, 194, 103, 0.35);
+}
+
+.dh-of-paper {
+    padding: 24px 14px 14px;
+    background: var(--of-paper);
+    color: var(--of-ink);
+    border: 2px solid var(--of-gold);
+    border-radius: 10px;
+}
+
+.dh-of-features {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    align-items: start;
+}
+
+.dh-of-features-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+.dh-of-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.dh-of-cards:empty {
+    display: none;
+}
+
+/* Cards: faixa escura com nome e tipo, texto numa caixa branca */
+.dh-of .dh-of-card {
+    background: linear-gradient(160deg, var(--of-purple-mid) 0%, var(--of-purple-deep) 60%, #0e0819 100%);
+    color: #fff;
+    border: 2px solid var(--of-gold);
+    border-top: 2px solid var(--of-gold);
+    border-radius: 12px;
+    padding: 0 0 8px;
+    gap: 0;
+    min-height: 0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+}
+
+.dh-of .dh-of-card:hover {
+    background: linear-gradient(160deg, var(--of-purple-mid) 0%, var(--of-purple-deep) 60%, #0e0819 100%);
+    border-color: var(--of-orange);
+    border-top-color: var(--of-orange);
+    transform: none;
+    box-shadow: 0 0 0 2px rgba(227, 140, 62, 0.4);
+}
+
+.dh-of-card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px 6px 12px;
+}
+
+.dh-of-card-title {
+    min-width: 0;
+    font-family: var(--of-heading);
+    font-size: 0.92em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+}
+
+.dh-of-card-tag {
+    flex: 1;
+    font-family: var(--of-heading);
+    font-size: 0.66em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--of-gold);
+}
+
+.dh-of .dh-of-card-head .dh-card-edit-btn {
+    flex-shrink: 0;
+    background: rgba(0, 0, 0, 0.35);
+    border-color: rgba(243, 194, 103, 0.5);
+}
+
+.dh-of-card-body {
+    margin: 0 8px;
+    padding: 8px 10px;
+    background: #fff;
+    color: var(--of-ink);
+    border: 1px solid var(--of-gold);
+    border-radius: 4px;
+}
+
+.dh-of .dh-of-card-body .dh-heritage-effect {
+    color: var(--of-ink);
+    font-size: 0.88em;
+    line-height: 1.4;
+}
+
+.dh-of .dh-of-card-body .dh-heritage-effect:last-child {
+    margin-bottom: 0;
+}
+
+.dh-of .dh-of-card-body .dh-heritage-effect-name {
+    color: #000;
+    font-weight: 800;
+}
+
+.dh-of-card-foot {
+    display: flex;
+    gap: 6px;
+    padding: 8px 8px 0;
+}
+
+.dh-of-chip {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    padding: 3px 6px;
+    background: var(--of-navy);
+    color: #fff;
+    border: 1px solid #fff;
+}
+
+.dh-of-chip strong {
+    font-family: var(--of-num);
+    font-size: 0.85em;
+    line-height: 1.1;
+}
+
+.dh-of-chip small {
+    font-family: var(--of-heading);
+    font-size: 0.55em;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+/* Seções clássicas reaproveitadas nas abas (Inventário, Outros Macros, Nível, Textos) */
+.dh-of .dh-section-title {
+    position: relative;
+    justify-content: center;
+    min-height: 22px;
+    box-sizing: border-box;
+    margin: 4px 0 12px;
+    padding: 2px 34px;
+    background: #000;
+    color: #fff;
+    border: 1px solid var(--of-gold);
+    border-radius: 12px;
+    font-family: var(--of-heading);
+    font-size: 0.75em;
+    letter-spacing: 0.08em;
+}
+
+.dh-of .dh-section-title > :nth-child(2) {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.dh-of-paper .dh-sheet-panel > .dh-section-title:not(:first-child) {
+    margin-top: 18px;
+}
+
+.dh-of-paper .dh-inventory-textbox,
+.dh-of-paper .dh-money-box {
+    background: #fff;
+    border: 2px solid var(--of-gold);
+    border-radius: 8px;
+}
+
+.dh-of-paper .dh-inventory-label {
+    color: var(--of-purple);
+    font-family: var(--of-heading);
+    letter-spacing: 0.06em;
+}
+
+.dh-of-paper .dh-inventory-textarea {
+    background: #fbfbfc;
+    color: var(--of-ink);
+    border-color: #cfd3da;
+    font-family: var(--of-body);
+    font-size: 0.95em;
+}
+
+.dh-of-paper .dh-inventory-textarea::-webkit-scrollbar-track {
+    background: #eceef1;
+}
+
+.dh-of-paper .dh-money-item {
+    background: var(--of-paper);
+    border-color: #d9dde3;
+}
+
+.dh-of-paper .dh-money-label {
+    color: var(--of-purple);
+    font-family: var(--of-heading);
+}
+
+.dh-of-paper .dh-spinner-group {
+    background: #fff;
+    border-color: #cfd3da;
+}
+
+.dh-of .dh-spin-btn {
+    background: #e8e9ec;
+    color: var(--of-purple);
+}
+
+.dh-of .dh-spin-btn:hover {
+    background: var(--of-gold);
+    color: #000;
+}
+
+.dh-of-paper .dh-ability-item {
+    background: #fff;
+    border: 1px solid #d9c38f;
+    color: var(--of-ink);
+}
+
+.dh-of-paper .dh-ability-item:hover {
+    background: #fff8ea;
+    border-color: var(--of-orange);
+}
+
+.dh-of-paper .dh-level-card {
+    background: #fff;
+    color: var(--of-ink);
+    border: 2px solid var(--of-gold);
+    border-radius: 10px;
+    box-shadow: none;
+}
+
+.dh-of-paper .dh-level-title {
+    color: var(--of-purple);
+}
+
+.dh-of-paper .dh-level-block-name {
+    color: #8a5a12;
+}
+
+.dh-of-paper .dh-level-block-text {
+    color: var(--of-ink);
+}
+
+/* --- Aba Equipamento da visualização Oficial: barra de Ouro + Inventário --- */
+.dh-of-gold {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 10px 16px;
+    padding: 2px 0 18px;
+}
+
+.dh-of-gold-title {
+    align-self: center;
+    margin-bottom: 14px;
+    color: var(--of-ink);
+    font-family: var(--of-heading);
+    font-size: 0.85em;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.dh-of-gold-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.dh-of-gold-track {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 4px;
+    background: #a3a5ab;
+    border-radius: 4px;
+}
+
+.dh-of .dh-of-gold-step {
+    width: 16px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.dh-of .dh-of-gold-step:hover {
+    color: var(--of-purple);
+}
+
+.dh-of-gold-slots {
+    display: flex;
+    gap: 1px;
+}
+
+.dh-of-gold-slot {
+    width: 17px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.dh-of-coin {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #8d8f95, #6e7076);
+    box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+    transition: transform 0.12s ease;
+}
+
+.dh-of-gold-slot--on .dh-of-coin {
+    background: radial-gradient(circle at 35% 35%, #ffe3a3, var(--of-gold) 45%, var(--of-orange));
+    box-shadow: 0 0 3px rgba(243, 194, 103, 0.8), inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.dh-of-gold-slot svg {
+    width: 13px;
+    height: 15px;
+    fill: #6e7076;
+    transition: transform 0.12s ease;
+}
+
+.dh-of-gold-slot--on svg {
+    fill: var(--of-gold);
+    filter: drop-shadow(0 0 2px rgba(243, 194, 103, 0.8));
+}
+
+.dh-of-gold-slot:hover .dh-of-coin,
+.dh-of-gold-slot:hover svg {
+    transform: scale(1.2);
+}
+
+.dh-of-gold-chest {
+    position: relative;
+    width: 34px;
+    height: 26px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #3b3d44;
+    border: 1px solid #1f2026;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.dh-of-gold-chest svg {
+    width: 20px;
+    height: 16px;
+    fill: #6e7076;
+}
+
+.dh-of-gold-chest .dh-of-chest-lock {
+    fill: #3b3d44;
+}
+
+.dh-of-gold-chest:hover {
+    border-color: var(--of-gold);
+}
+
+.dh-of-gold-chest--on {
+    background: var(--of-purple);
+    border-color: var(--of-gold);
+}
+
+.dh-of-gold-chest--on svg {
+    fill: var(--of-gold);
+}
+
+.dh-of-gold-chest--on .dh-of-chest-lock {
+    fill: var(--of-purple);
+}
+
+.dh-of-gold-badge {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 3px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    background: var(--of-orange);
+    color: #000;
+    font-family: var(--of-num);
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 15px;
+}
+
+.dh-of-gold-label {
+    color: var(--of-ink);
+    font-family: var(--of-heading);
+    font-size: 0.62em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.dh-of-gold-label strong {
+    color: var(--of-purple);
+}
+
+.dh-of-gold .dh-add-missing-btn {
+    height: 26px;
+    background: #fff;
+    color: var(--of-purple);
+    border-color: var(--of-purple);
+    font-size: 0.75em;
+}
+
+.dh-of-paper .dh-of-inventory {
+    display: block;
+    width: 100%;
+    min-height: 220px;
+    margin-top: 12px;
+}
+
+/* --- Ficha estreita (ex.: fixada no canto da tela) --- */
+/* Ficha média: as três colunas continuam lado a lado, só mais compactas */
+@container (max-width: 820px) {
+    #dh-content-root .dh-of-frame {
+        padding: 12px 10px 14px;
+    }
+
+    #dh-content-root .dh-of-columns {
+        gap: 8px;
+    }
+
+    #dh-content-root .dh-of-bar-title {
+        padding: 2px 20px;
+        font-size: 0.68em;
+        letter-spacing: 0.05em;
+    }
+
+    #dh-content-root .dh-of-bar-title--many-actions {
+        padding: 2px 8px 2px 14px;
+    }
+
+    #dh-content-root .dh-of-thresholds {
+        gap: 2px;
+        padding: 4px 3px;
+    }
+
+    #dh-content-root .dh-of-threshold-label strong,
+    #dh-content-root .dh-of-threshold-label small {
+        font-size: 0.58em;
+        letter-spacing: 0;
+    }
+
+    #dh-content-root .dh-of-threshold-val .dh-defense-val {
+        min-width: 24px;
+        height: 24px;
+        font-size: 0.9em;
+    }
+
+    #dh-content-root .dh-of-track .dh-tracker-bar {
+        padding: 0 4px;
+        gap: 3px;
+    }
+
+    #dh-content-root .dh-of-track .dh-dots-container {
+        gap: 3px;
+    }
+
+    #dh-content-root .dh-of-track--boxes .dh-dot {
+        width: 10px;
+        height: 8px;
+    }
+
+    #dh-content-root .dh-of-track--diamonds .dh-dots-container {
+        flex-wrap: nowrap;
+        gap: 7px;
+        padding: 6px 6px;
+    }
+
+    #dh-content-root .dh-of-track--diamonds .dh-dot {
+        width: 11px;
+        height: 11px;
+    }
+
+    #dh-content-root .dh-of .dh-defense-spin-btn {
+        width: 16px;
+        height: 16px;
+        font-size: 11px;
+    }
+
+    #dh-content-root .dh-of-weapon-head {
+        flex-wrap: wrap;
+        gap: 4px 6px;
+    }
+
+    #dh-content-root .dh-of-weapon-stats {
+        margin-left: auto;
+    }
+
+    #dh-content-root .dh-of-exp-box {
+        padding: 16px 6px 6px;
+    }
+
+    #dh-content-root .dh-of-exp-box > .dh-of-bar-title {
+        left: 8px;
+        right: 8px;
+    }
+
+    #dh-content-root .dh-of .dh-exp-name {
+        font-size: 0.68em;
+        letter-spacing: 0.02em;
+    }
+
+    #dh-content-root .dh-of-trait .dh-trait-name {
+        padding: 1px 4px;
+        font-size: 0.6em;
+        letter-spacing: 0.02em;
+    }
+}
+
+/* Ficha estreita: Esperança e Experiências descem para baixo das outras duas colunas */
+@container (max-width: 580px) {
+    #dh-content-root .dh-of-columns {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px 8px;
+    }
+
+    #dh-content-root .dh-of-col--hope {
+        grid-column: 1 / -1;
+    }
+}
+
+@container (max-width: 640px) {
+    #dh-content-root .dh-of-track--diamonds .dh-dots-container {
+        gap: 5px;
+        padding: 5px 4px;
+    }
+
+    #dh-content-root .dh-of-track--diamonds .dh-dot {
+        width: 9px;
+        height: 9px;
+        border-width: 1.5px;
+    }
+
+    #dh-content-root .dh-of-core {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    #dh-content-root .dh-of-defense {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 14px;
+    }
+
+    #dh-content-root .dh-of-features {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@container (max-width: 440px) {
+    #dh-content-root .dh-of-columns {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@container (max-width: 520px) {
+    #dh-content-root .dh-of-tabs .dh-sheet-tab {
+        padding: 4px 9px;
+        font-size: 0.66em;
+    }
+
+    #dh-content-root .dh-of-traits {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        row-gap: 12px;
+    }
+
+    #dh-content-root .dh-of-name {
+        font-size: 1.5em;
+    }
+
+    #dh-content-root .dh-of-frame {
+        padding: 12px 10px;
+    }
+
+    #dh-content-root .dh-of-paper {
+        padding: 24px 8px 10px;
+    }
+}
+
+/* ==========================================================================
+   Contadores das cartas ({{Nome=atual/máximo}} na macro)
+   ========================================================================== */
+.dh-card-counters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.dh-card-counter {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 5px;
+    background: #12141c;
+    border: 1px solid #3c4252;
+    border-radius: 5px;
+    cursor: default;
+}
+
+.dh-card-counter-btn {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #1b1f2b;
+    border: 1px solid #3c4252;
+    border-radius: 4px;
+    color: #a0aec0;
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.dh-card-counter-btn:hover {
+    background: #f1c40f;
+    border-color: #f1c40f;
+    color: #12141c;
+}
+
+.dh-card-counter-val {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 44px;
+    line-height: 1.15;
+}
+
+.dh-card-counter-val strong {
+    color: #f1c40f;
+    font-size: 0.9em;
+}
+
+.dh-card-counter-val small {
+    color: #a0aec0;
+    font-size: 0.6em;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.dh-cards-simple .dh-card-counters {
+    display: none;
+}
+
+/* Visualização Oficial: caixinha azul-marinho como as de Fadiga/Fichas da ficha oficial */
+.dh-of .dh-card-counters {
+    display: contents;
+}
+
+.dh-of .dh-card-counter {
+    background: var(--of-navy);
+    border: 1px solid #fff;
+    border-radius: 0;
+    padding: 3px 4px;
+}
+
+.dh-of .dh-card-counter-btn {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--of-grey);
+    border-color: #3d3d44;
+    color: #fff;
+}
+
+.dh-of .dh-card-counter-btn:hover {
+    background: var(--of-gold);
+    border-color: var(--of-gold);
+    color: #000;
+}
+
+.dh-of .dh-card-counter-val strong {
+    color: #fff;
+    font-family: var(--of-num);
+}
+
+.dh-of .dh-card-counter-val small {
+    color: #d6cdf0;
+    font-family: var(--of-heading);
+    font-size: 0.55em;
+}
+
+.dh-of-card-foot {
+    flex-wrap: wrap;
+    align-items: stretch;
+}
+
+/* Linha de contador nos modais de carta */
+.dh-counter-edit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.dh-counter-edit-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: #12141c;
+    border: 1px solid #2d3748;
+    border-radius: 6px;
+}
+
+.dh-counter-edit-item .dh-counter-name-input {
+    flex: 1;
+    min-width: 0;
+    font-weight: bold;
+    color: #f1c40f;
+}
+
+.dh-counter-max-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #a0aec0;
+    font-size: 0.8em;
+    white-space: nowrap;
+}
+
+.dh-counter-max-label .dh-counter-max-input {
+    width: 56px;
+}
+
+/* ==========================================================================
+   Imagem/GIF das cartas ([x](link) no fim da descrição)
+   ========================================================================== */
+.dh-card-image {
+    margin: 2px 0;
+    overflow: hidden;
+    background: #0b0c10;
+    border-radius: 4px;
+}
+
+.dh-card-image img {
+    display: block;
+    width: 100%;
+    max-height: 160px;
+    object-fit: cover;
+}
+
+.dh-cards-simple .dh-card-image {
+    display: none;
+}
+
+/* Oficial: a imagem vira o fundo do card, com o título por cima */
+.dh-of .dh-of-card.dh-of-card--image,
+.dh-of .dh-of-card.dh-of-card--image:hover {
+    background:
+        linear-gradient(180deg, rgba(14, 8, 25, 0.6) 0%, rgba(14, 8, 25, 0.1) 40%, rgba(14, 8, 25, 0.85) 100%),
+        var(--dh-card-image) center / cover no-repeat,
+        var(--of-purple-deep);
+}
+
+.dh-of .dh-of-card--image .dh-of-card-head {
+    min-height: 96px;
+    align-items: flex-start;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+/* Prévia no modal */
+.dh-card-image-preview img {
+    display: block;
+    max-width: 100%;
+    max-height: 140px;
+    margin-top: 6px;
+    border-radius: 4px;
+}
+
+/* Regras em negrito no texto das cartas (gastar Esperança, marcar Fadiga, testes, dados...) */
+.dh-rule-highlight {
+    color: #fff;
+    font-weight: 800;
+}
+
+.dh-of .dh-of-card-body .dh-rule-highlight {
+    color: #000;
+}
+
+.dh-of-weapon-feature .dh-rule-highlight {
+    color: #fff;
+}
+
+/* Domínios do personagem na faixa de identidade (visualização Oficial) */
+.dh-of-hero-side {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    flex-shrink: 0;
+}
+
+.dh-of .dh-of-domains {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    max-width: 220px;
+    margin-top: -16px; /* o estandarte "pendura" na borda de cima da moldura */
+    padding: 0;
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+}
+
+.dh-of-banner-outline {
+    filter:
+        drop-shadow(1.5px 0 0 var(--of-gold))
+        drop-shadow(-1.5px 0 0 var(--of-gold))
+        drop-shadow(0 1.5px 0 var(--of-gold));
+}
+
+.dh-of-banner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    width: 30px;
+    height: 50px;
+    padding-top: 8px;
+    box-sizing: border-box;
+    background: linear-gradient(180deg, #5a35a3, var(--of-purple-mid));
+    color: var(--of-gold);
+    font-size: 12px;
+    line-height: 1;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+}
+
+.dh-of-domains-names {
+    font-family: var(--of-heading);
+    font-size: 0.72em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.dh-of-domains-amp {
+    color: var(--of-gold);
+}
+
+.dh-of-domain-name {
+    white-space: nowrap;
+}
+
+.dh-of .dh-of-domains:hover .dh-of-domains-names {
+    color: var(--of-gold);
+}
+
+.dh-of .dh-of-domains:hover .dh-of-banner {
+    background: linear-gradient(180deg, #6d44c2, var(--of-purple));
+}
+
+.dh-of-domains-add {
+    display: inline-block;
+    letter-spacing: 0.04em;
+}
+
+@container (max-width: 520px) {
+    #dh-content-root .dh-of-hero-side {
+        gap: 10px;
+    }
+
+    #dh-content-root .dh-of-domains {
+        max-width: 110px;
+    }
 }

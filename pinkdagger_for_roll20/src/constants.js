@@ -5,7 +5,7 @@ const MACRO_TEMPLATES = {
     cla: `&{template:default} {{name=Nome da Classe\n}} {{Nome da habilidade=O que a habilidade faz.\n}}`,
     sub: `&{template:default} {{name=Nome da Subclasse\n}} {{Conjuração=Atributo\n}} {{Nome do Efeito=O que a habilidade faz.\n}}`,
     esp: `&{template:default} {{name=Nome da Habilidade\n}} {{O que a habilidade faz.\n}}`,
-    wea: `#Atributo-Agilidade &{template:default} {{name=Nome da Arma\n}} {{dano=[[@{proficiência}d8 + 0]]\n}} {{desc=<OPCIONAL> Efeito crítico ou alcance.\n}}`,
+    wea: `#Atributo-Agilidade &{template:default} {{name=Nome da Arma\n}} {{alcance=Corpo a Corpo\n}} {{dano=[[@{proficiência}d8 + 0]]\n}} {{desc=<OPCIONAL> Característica da arma.\n}}`,
     dom: `&{template:default} {{name=Nome da Carta\n}} {{Nível=1\n}} {{Custo=0\n}} {{Descrição=O que a carta de domínio faz.\n}}`,
     exp: `&{template:default} {{name=Nome da Experiência\n}} {{Modificador=+2\n}}`,
     inv: `Itens:`,
@@ -31,7 +31,7 @@ const FEAR_DEFAULT_MAX = 12;
 // Configurações do usuário (salvas no navegador, valem para todas as fichas)
 const SETTINGS_STORAGE_KEY = 'pinkdagger_settings';
 const SETTINGS_DEFAULTS = {
-    cardView: 'detailed' // 'detailed' | 'simple'
+    cardView: 'detailed' // 'detailed' (Clássico) | 'simple' (Simplificado) | 'official' (Oficial)
 };
 
 // Opções da página de configurações da extensão (chrome.storage: o localStorage do Roll20 não é visível nessa página)
@@ -44,6 +44,9 @@ const SHEET_TYPE_MARKERS = ['pinkdagger_pc', 'pinkdagger_npc', 'pinkdagger_fear'
 
 // Altura das caixas de texto de macro (salva no navegador, por personagem e macro)
 const TEXTAREA_HEIGHTS_STORAGE_KEY = 'pinkdagger_textarea_heights';
+
+// Alcances sugeridos no modal de arma (o campo aceita qualquer texto)
+const WEAPON_RANGES = ['Corpo a Corpo', 'Muito Próximo', 'Próximo', 'Longe', 'Muito Longe'];
 
 // Atributos principais e recursos/trackers fixos do sistema Daggerheart
 const FIXED_TRAITS = ['agilidade', 'força', 'acuidade', 'instinto', 'presença', 'conhecimento'];

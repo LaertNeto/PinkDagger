@@ -383,6 +383,51 @@ async function createAttributeRowInRoll20(doc, attrName, value) {
 
 // Ataque do NPC: grava os valores nos atributos (criando os que faltam) e reescreve a macro
 // de ataque para referenciá-los, mantendo os campos extras que já existiam nela
+// Nomes aceitos para os atributos de domínio do personagem (Dominio1, Domínio 2, dominio_1...)
+function getDomainAttributeNames(slot) {
+    return ['dominio', 'domínio'].flatMap(base => ['', ' ', '_', '-'].map(sep => `${base}${sep}${slot}`));
+}
+
+// Lê "Arcano & Meia-Noite" (ou separado por vírgula, barra ou " e ") e devolve os dois nomes
+function parseDomainNames(text) {
+    const parts = String(text ?? '').split(/\s*(?:&|,|\/|\s+e\s+)\s*/i).map(part => part.trim()).filter(Boolean);
+    return [parts[0] || '', parts[1] || ''];
+}
+
+// Caixa para escrever os dois domínios (usada nas visualizações Clássica, Simplificada e Oficial)
+function promptCharacterDomains(doc, domains) {
+    const current = domains.map(d => d.val).filter(Boolean).join(' & ');
+    const answer = prompt('Domínios do personagem, separados por & (ex.: Arcano & Meia-Noite):', current);
+    if (answer === null) return;
+    const names = parseDomainNames(answer);
+    if (names[0] === (domains[0]?.val || '') && names[1] === (domains[1]?.val || '')) return;
+    saveCharacterDomainsToRoll20(doc, names);
+}
+
+// Grava os domínios do personagem nos atributos Dominio1 e Dominio2, criando os que faltam.
+// names: [domínio 1, domínio 2]; texto vazio deixa o atributo vazio.
+async function saveCharacterDomainsToRoll20(doc, names) {
+    const navTabs = doc.querySelector('.nav.nav-tabs');
+    const attrTabNav = navTabs?.querySelector('a[data-tab="attributesabilities"]');
+    const pinkDaggerNav = navTabs?.querySelector('a[data-tab="daggerheart"]');
+    if (!attrTabNav) return;
+
+    attrTabNav.click();
+    await delay(200);
+
+    for (let i = 0; i < names.length; i++) {
+        const input = findAttributeInput(doc, getDomainAttributeNames(i + 1));
+        if (input) {
+            if (input.value !== names[i]) updateOriginalInput(input, names[i]);
+        } else if (names[i]) {
+            await createAttributeRowInRoll20(doc, `Dominio${i + 1}`, names[i]);
+        }
+    }
+
+    if (pinkDaggerNav) pinkDaggerNav.click();
+    populateDaggerheartData(doc);
+}
+
 async function saveNpcAttackToRoll20(doc, attackMacroName, attackData) {
     const navTabs = doc.querySelector('.nav.nav-tabs');
     const attrTabNav = navTabs?.querySelector('a[data-tab="attributesabilities"]');
@@ -482,7 +527,28 @@ async function saveCompanionAttackToRoll20(doc, attackMacroName, attackData) {
 // Renomeia a macro de uma carta (ex.: dom_Livro -> dom_Livro de Korvax) para acompanhar o
 // nome editado na ficha. Só vale para macros com prefixo de 3 letras; o prefixo é mantido.
 // Retorna true se renomeou (a renomeação já redesenha a ficha).
-async function syncCardMacroName(doc, rawName, newCardName) {
+// Soma delta no contador {{Nome=atual/máximo}} da macro (entre 0 e o máximo) e salva.
+// Retorna o valor novo, ou null se a macro ou o contador não foram achados.
+function updateCardCounterInRoll20(doc, rawName, counterName, delta) {
+    // Busca a macro novamente: o Roll20 recria a linha ao salvar e a referência antiga fica solta
+    const abil = findAbilityElementByName(doc, rawName);
+    const field = abil?.querySelector('textarea, input[name*="action"]');
+    if (!field) return null;
+
+    const escapedName = counterName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const counterRegex = new RegExp(`(\\{\\{\\s*${escapedName}\\s*=\\s*)(\\d+)(\\s*/\\s*)(\\d+)(\\s*\\}\\})`, 'i');
+    const match = field.value.match(counterRegex);
+    if (!match) return null;
+
+    const max = parseInt(match[4], 10);
+    const newValue = Math.min(Math.max(parseInt(match[2], 10) + delta, 0), max);
+    updateOriginalInput(field, field.value.replace(counterRegex, (all, start, current, slash, maxText, end) => `${start}${newValue}${slash}${maxText}${end}`));
+    abil.querySelector('.saveabil')?.click();
+    return newValue;
+}
+
+// itemLabel entra no aviso de nome repetido (ex.: "A carta", "A arma")
+async function syncCardMacroName(doc, rawName, newCardName, itemLabel = 'A carta') {
     const prefixMatch = rawName.match(/^[a-z]{3}_/i);
     const cardName = String(newCardName || '').replace(/\s+/g, ' ').trim();
     if (!prefixMatch || !cardName || cardName.toLowerCase() === rawName.toLowerCase()) return false;
@@ -493,7 +559,7 @@ async function syncCardMacroName(doc, rawName, newCardName) {
     // Só a capitalização mudou: a "outra" macro com o mesmo nome é ela mesma
     const onlyCaseChanged = newRawName.toLowerCase() === rawName.toLowerCase();
     if (!onlyCaseChanged && abilityExistsInRoll20(doc, newRawName)) {
-        alert(`A carta foi salva, mas a macro continua como "${rawName}" porque já existe outra chamada "${newRawName}".`);
+        alert(`${itemLabel} foi salva, mas a macro continua como "${rawName}" porque já existe outra chamada "${newRawName}".`);
         return false;
     }
 

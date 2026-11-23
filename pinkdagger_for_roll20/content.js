@@ -54,6 +54,7 @@
                     <h2 id="dh-char-name">PinkDagger</h2>
                     <div class="dh-title-actions">
                         <div class="dh-header-meta">
+                            <span class="dh-header-domains" title="Clique para escrever os domínios">Domínios: <strong id="dh-char-domains">-</strong></span>
                             <span>Nível: <strong id="dh-char-nivel">-</strong></span>
                             <span>Proficiência: <strong id="dh-char-prof">-</strong></span>
                         </div>

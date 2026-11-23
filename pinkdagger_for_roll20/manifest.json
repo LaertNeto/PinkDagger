@@ -52,6 +52,7 @@
         "src/gmroll.js",
         "src/modals.js",
         "src/sheet.js",
+        "src/officialSheet.js",
         "src/companion.js",
         "src/dock.js",
         "content.js"

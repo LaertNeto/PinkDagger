@@ -293,8 +293,28 @@ function applySimpleCardView(doc, root, containerSelectors) {
         if (!container) return;
         attachCardTooltip(doc, container, '.dh-heritage-card, .dh-weapon-card, .dh-domain-card', (cardElem) => {
             const clone = cardElem.cloneNode(true);
-            clone.querySelectorAll('.dh-card-edit-btn, .dh-weapon-edit-btn').forEach(btn => btn.remove());
+            clone.querySelectorAll('.dh-card-edit-btn, .dh-weapon-edit-btn, .dh-card-counter-btn').forEach(btn => btn.remove());
             return clone.outerHTML;
+        });
+    });
+}
+
+// −/+ dos contadores das cartas: muda o valor na hora e salva na macro do Roll20
+function setupCardCounters(doc, root) {
+    root.querySelectorAll('.dh-card-counter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation(); // o clique no card rola a macro
+            const counterElem = btn.closest('.dh-card-counter');
+            const newValue = updateCardCounterInRoll20(
+                doc,
+                counterElem.getAttribute('data-card-fullname'),
+                counterElem.getAttribute('data-counter-name'),
+                parseInt(btn.getAttribute('data-counter-step'), 10)
+            );
+            if (newValue !== null) {
+                counterElem.querySelector('.dh-card-counter-current').textContent = newValue;
+            }
         });
     });
 }
@@ -331,6 +351,8 @@ function populateDaggerheartData(doc) {
         bau: { val: 0, input: null, exists: false } 
     };
     let nivelVal = null;
+    // Domínios do personagem (atributos Dominio1 e Dominio2)
+    const domainSlots = [{ val: '', exists: false }, { val: '', exists: false }];
     let profVal = null;
     let isNpc = false;
     let isPc = false;
@@ -378,6 +400,8 @@ function populateDaggerheartData(doc) {
             defenses.menor = { val: currentVal, input: currentInput, exists: true };
         } else if (lowerName === 'limiar-maior' || lowerName === 'limiar maior') {
             defenses.maior = { val: currentVal, input: currentInput, exists: true };
+        } else if (/^dom[ií]nio[\s_-]?[12]$/.test(lowerName)) {
+            domainSlots[parseInt(lowerName.slice(-1), 10) - 1] = { val: String(currentVal ?? '').trim(), exists: true };
         } else if (lowerName === 'nivel' || lowerName === 'nível') {
             nivelVal = currentVal;
         } else if (lowerName === 'proficiência' || lowerName === 'proficiencia') {
@@ -627,15 +651,17 @@ function populateDaggerheartData(doc) {
                 } else if (lowerName.startsWith('hab_') || lowerName.startsWith('habilidade') || lowerName.startsWith('esp_')) {
                     const fields = extractMacroFields(macroContent);
                     const cardTitle = fields['name'] ? formatTextWithNewlines(fields['name']) : rawName.replace(/^hab_/i, '').trim();
+                    const image = getCardImageUrl(macroContent);
                     let effectsHTML = '';
 
                     Object.keys(fields).forEach(key => {
-                        if (key !== 'name') {
+                        const text = stripCardImageLinks(fields[key]);
+                        if (key !== 'name' && text) {
                             if (key === '__raw_desc__' || key === 'desc' || key === 'descrição' || key === 'descricao' || key === 'efeito') {
-                                effectsHTML += `<div class="dh-heritage-effect">${formatTextWithNewlines(fields[key])}</div>`;
+                                effectsHTML += `<div class="dh-heritage-effect">${formatCardText(text)}</div>`;
                             } else {
                                 const formattedKey = key.charAt(0).toUpperCase() + key.slice(1);
-                                effectsHTML += `<div class="dh-heritage-effect"><span class="dh-heritage-effect-name">${formattedKey}:</span>${formatTextWithNewlines(fields[key])}</div>`;
+                                effectsHTML += `<div class="dh-heritage-effect"><span class="dh-heritage-effect-name">${formattedKey}:</span>${formatCardText(text)}</div>`;
                             }
                         }
                     });
@@ -647,7 +673,8 @@ function populateDaggerheartData(doc) {
                                 <button class="dh-card-edit-btn" data-abil-idx="${abilIdx}" data-card-fullname="${rawName}" data-card-type="Habilidade" title="Editar Habilidade">✏️</button>
                             </div>
                             <div class="dh-heritage-title">${cardTitle}</div>
-                            ${effectsHTML || '<div class="dh-heritage-effect">Sem descrição informada.</div>'}
+                            ${getCardImageHTML(image)}
+                            ${effectsHTML || (image ? '' : '<div class="dh-heritage-effect">Sem descrição informada.</div>')}
                         </div>
                     `;
                 }
@@ -947,6 +974,21 @@ function populateDaggerheartData(doc) {
         }
     }
 
+    // Domínios no topo (na Oficial eles ficam ao lado do escudo de Nível, e este topo fica escondido)
+    const domainsElem = doc.getElementById('dh-char-domains');
+    if (domainsElem) {
+        const domainNames = domainSlots.map(d => d.val).filter(Boolean);
+        domainsElem.parentElement.style.display = ''; // a ficha de companheiro esconde os Domínios
+        domainsElem.innerHTML = domainNames.map(escapeHtml).join(' &amp; ')
+            + (domainNames.length < 2 ? `${domainNames.length ? ' &amp; ' : ''}<button type="button" class="dh-add-missing-btn" title="Adicionar domínio">+</button>` : '');
+        // onclick (e não addEventListener): o topo não é recriado a cada re-render
+        domainsElem.parentElement.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            promptCharacterDomains(doc, domainSlots);
+        };
+    }
+
     let traitsHTML = '<div class="dh-section-title"><span>Atributos Principais</span></div><div class="dh-traits-grid" id="dh-traits-container">';
     fixedTraits.forEach(traitKey => {
         const data = traitsMap[traitKey];
@@ -1043,6 +1085,11 @@ function populateDaggerheartData(doc) {
     let domainCount = 0;
     let levelCardsHTML = '';
     let levelCount = 0;
+    // Dados dos cards para a visualização Oficial, que monta os mesmos cards com outro layout
+    const heritageItems = [];
+    const classItems = [];
+    const weaponItems = [];
+    const domainItems = [];
     let generalAbilitiesHTML = '<div class="dh-section-title"><span>Outros Macros</span></div><ul class="dh-abilities-list" id="dh-other-macros-container">';
     let validAbilitiesCount = 0;
     
@@ -1087,13 +1134,18 @@ function populateDaggerheartData(doc) {
                 let cardTitle = fields['name'] ? formatTextWithNewlines(fields['name']) : rawName.substring(4).trim();
                 let effectsHTML = '';
 
+                const counters = getCardCounters(macroContent);
+                const image = getCardImageUrl(macroContent);
+
                 Object.keys(fields).forEach(key => {
-                    if (key !== 'name') {
+                    const text = stripCardImageLinks(fields[key]);
+                    if (key !== 'name' && text && !parseCardCounter(fields[key])) {
                         const formattedKey = key.charAt(0).toUpperCase() + key.slice(1);
-                        effectsHTML += `<div class="dh-heritage-effect"><span class="dh-heritage-effect-name">${formattedKey}:</span>${formatTextWithNewlines(fields[key])}</div>`;
+                        effectsHTML += `<div class="dh-heritage-effect"><span class="dh-heritage-effect-name">${formattedKey}:</span>${formatCardText(text)}</div>`;
                     }
                 });
 
+                heritageItems.push({ rawName, abilIdx, typeTag, title: cardTitle, effectsHTML, counters, image });
                 heritageCardsHTML += `
                     <div class="dh-heritage-card" data-card-fullname="${rawName}">
                         <div class="dh-card-header">
@@ -1101,7 +1153,9 @@ function populateDaggerheartData(doc) {
                             <button class="dh-card-edit-btn" data-abil-idx="${abilIdx}" data-card-fullname="${rawName}" data-card-type="${typeTag}" title="Editar ${typeTag}">✏️</button>
                         </div>
                         <div class="dh-heritage-title">${cardTitle}</div>
-                        ${effectsHTML || '<div class="dh-heritage-effect">Sem efeitos informados.</div>'}
+                        ${getCardImageHTML(image)}
+                        ${effectsHTML || (counters.length || image ? '' : '<div class="dh-heritage-effect">Sem efeitos informados.</div>')}
+                        ${getCardCountersHTML(rawName, counters)}
                     </div>
                 `;
             } else if (lowerName.startsWith('cla_') || lowerName.startsWith('sub_') || lowerName.startsWith('esp_')) {
@@ -1117,17 +1171,22 @@ function populateDaggerheartData(doc) {
                 let cardTitle = fields['name'] ? formatTextWithNewlines(fields['name']) : rawName.substring(4).trim();
                 let effectsHTML = '';
 
+                const counters = getCardCounters(macroContent);
+                const image = getCardImageUrl(macroContent);
+
                 Object.keys(fields).forEach(key => {
-                    if (key !== 'name') {
+                    const text = stripCardImageLinks(fields[key]);
+                    if (key !== 'name' && text && !parseCardCounter(fields[key])) {
                         if (key === '__raw_desc__') {
-                            effectsHTML += `<div class="dh-heritage-effect">${formatTextWithNewlines(fields[key])}</div>`;
+                            effectsHTML += `<div class="dh-heritage-effect">${formatCardText(text)}</div>`;
                         } else {
                             const formattedKey = key.charAt(0).toUpperCase() + key.slice(1);
-                            effectsHTML += `<div class="dh-heritage-effect"><span class="dh-heritage-effect-name">${formattedKey}:</span>${formatTextWithNewlines(fields[key])}</div>`;
+                            effectsHTML += `<div class="dh-heritage-effect"><span class="dh-heritage-effect-name">${formattedKey}:</span>${formatCardText(text)}</div>`;
                         }
                     }
                 });
 
+                classItems.push({ rawName, abilIdx, typeTag, title: cardTitle, effectsHTML, counters, image });
                 classCardsHTML += `
                     <div class="dh-heritage-card" data-card-fullname="${rawName}">
                         <div class="dh-card-header">
@@ -1135,7 +1194,9 @@ function populateDaggerheartData(doc) {
                             <button class="dh-card-edit-btn" data-abil-idx="${abilIdx}" data-card-fullname="${rawName}" data-card-type="${typeTag}" title="Editar ${typeTag}">✏️</button>
                         </div>
                         <div class="dh-heritage-title">${cardTitle}</div>
-                        ${effectsHTML || '<div class="dh-heritage-effect">Sem efeitos informados.</div>'}
+                        ${getCardImageHTML(image)}
+                        ${effectsHTML || (counters.length || image ? '' : '<div class="dh-heritage-effect">Sem efeitos informados.</div>')}
+                        ${getCardCountersHTML(rawName, counters)}
                     </div>
                 `;
             } else if (lowerName.startsWith('lvl_')) {
@@ -1189,20 +1250,25 @@ function populateDaggerheartData(doc) {
                 const weaponTitle = fields['name'] ? formatTextWithNewlines(fields['name']) : fallbackName;
                 const weaponDamageRaw = fields['dano'] || fields['damage'] || '';
                 const weaponDesc = fields['desc'] || fields['descrição'] || fields['descricao'] || '';
+                const weaponRange = getWeaponRange(fields);
 
                 const formattedDamage = formatDamageFormula(weaponDamageRaw, profVal || '-');
 
+                weaponItems.push({ rawName, abilIdx, trait: weaponTrait, title: weaponTitle, damage: formattedDamage, desc: weaponDesc, range: weaponRange });
                 weaponCardsHTML += `
                     <div class="dh-weapon-card" data-card-fullname="${rawName}">
                         <div class="dh-weapon-header">
-                            <span class="dh-weapon-trait-tag">${weaponTrait}</span>
+                            <div class="dh-weapon-tags">
+                                <span class="dh-weapon-trait-tag">${weaponTrait}</span>
+                                ${weaponRange ? `<span class="dh-weapon-trait-tag dh-weapon-range-tag">${weaponRange}</span>` : ''}
+                            </div>
                             <div style="display: flex; gap: 6px; align-items: center;">
                                 <span class="dh-weapon-damage-tag">${formattedDamage}</span>
                                 <button class="dh-weapon-edit-btn" data-abil-idx="${abilIdx}" data-card-fullname="${rawName}" title="Editar Arma">✏️</button>
                             </div>
                         </div>
                         <div class="dh-weapon-title">${weaponTitle}</div>
-                        ${weaponDesc ? `<div class="dh-weapon-desc">${formatTextWithNewlines(weaponDesc)}</div>` : ''}
+                        ${weaponDesc ? `<div class="dh-weapon-desc">${formatCardText(weaponDesc)}</div>` : ''}
                     </div>
                 `;
             } else if (lowerName.startsWith('dom_')) {
@@ -1215,8 +1281,13 @@ function populateDaggerheartData(doc) {
                 const cardName = fields['name'] ? formatTextWithNewlines(fields['name']) : fallbackName;
                 const cardNivel = fields['nível'] || fields['nivel'] ? formatTextWithNewlines(fields['nível'] || fields['nivel']) : '-';
                 const cardCusto = fields['custo'] ? formatTextWithNewlines(fields['custo']) : '-';
-                const cardDesc = fields['descrição'] || fields['descricao'] || fields['desc'] ? formatTextWithNewlines(fields['descrição'] || fields['descricao'] || fields['desc']) : 'Sem descrição.';
+                const rawDomainDesc = fields['descrição'] || fields['descricao'] || fields['desc'] || '';
+                const image = getCardImageUrl(rawDomainDesc);
+                const cardDesc = formatCardText(stripCardImageLinks(rawDomainDesc)) || (image ? '' : 'Sem descrição.');
 
+                const counters = getCardCounters(macroContent);
+
+                domainItems.push({ rawName, abilIdx, name: cardName, nivel: cardNivel, custo: cardCusto, desc: cardDesc, counters, image });
                 domainCardsHTML += `
                     <div class="dh-domain-card" data-card-fullname="${rawName}">
                         <div class="dh-domain-header">
@@ -1227,7 +1298,9 @@ function populateDaggerheartData(doc) {
                             <button class="dh-card-edit-btn" data-abil-idx="${abilIdx}" data-card-fullname="${rawName}" title="Editar Carta de Domínio">✏️</button>
                         </div>
                         <div class="dh-domain-name">${cardName}</div>
-                        <div class="dh-domain-desc">${cardDesc}</div>
+                        ${getCardImageHTML(image)}
+                        ${cardDesc ? `<div class="dh-domain-desc">${cardDesc}</div>` : ''}
+                        ${getCardCountersHTML(rawName, counters)}
                     </div>
                 `;
             } else if (lowerName.startsWith('vau_')) {
@@ -1389,16 +1462,34 @@ function populateDaggerheartData(doc) {
         </div>
     `;
 
-    // A aba ativa fica guardada no root para sobreviver aos re-renders da ficha
-    const activeTab = root.dataset.activeTab || 'ficha';
-    const getTabHTML = (tab, label) => `<button type="button" class="dh-sheet-tab${activeTab === tab ? ' dh-sheet-tab--active' : ''}" data-sheet-tab="${tab}">${label}</button>`;
-    const getPanelHTML = (tab, content) => `<div class="dh-sheet-panel${activeTab === tab ? ' dh-sheet-panel--active' : ''}" data-sheet-panel="${tab}">${content}</div>`;
+    const isOfficialView = getPinkDaggerSettings().cardView === 'official';
 
-    root.innerHTML = `<div class="dh-sheet-tabs">${getTabHTML('ficha', 'Ficha')}${getTabHTML('textos', 'Textos')}</div>`
-        + getPanelHTML('ficha', traitsHTML + statsHTML + defensesHTML + customStatsHTML + finalHeritageHTML + finalClassHTML + finalWeaponsHTML + finalDomainsHTML + inventoryHTML + generalAbilitiesHTML + finalLevelHTML)
-        + getPanelHTML('textos', textsHTML);
+    if (isOfficialView) {
+        // Nível e Proficiência aparecem dentro da própria ficha Oficial
+        if (headerMeta) headerMeta.style.display = 'none';
+        root.innerHTML = buildOfficialSheetHTML({
+            charName: getSheetCharacterName(doc),
+            nivelVal, profVal, traitsMap, trackersMap, defenses,
+            expCardsHTML, expCount,
+            heritageItems, classItems, weaponItems, domainItems,
+            customStatsHTML, generalAbilitiesHTML, finalLevelHTML, textsHTML,
+            moneyMap, inventoryText, hasInventory: !!inventoryTextareaElem,
+            domains: domainSlots,
+            activeTab: getOfficialActiveTab(root.dataset.activeTab)
+        });
+        setupOfficialSheet(doc, root, moneyMap, domainSlots);
+    } else {
+        // A aba ativa fica guardada no root para sobreviver aos re-renders da ficha
+        const activeTab = root.dataset.activeTab === 'textos' ? 'textos' : 'ficha';
+        const getTabHTML = (tab, label) => `<button type="button" class="dh-sheet-tab${activeTab === tab ? ' dh-sheet-tab--active' : ''}" data-sheet-tab="${tab}">${label}</button>`;
+        const getPanelHTML = (tab, content) => `<div class="dh-sheet-panel${activeTab === tab ? ' dh-sheet-panel--active' : ''}" data-sheet-panel="${tab}">${content}</div>`;
 
-    applySimpleCardView(doc, root, ['#dh-heritage-container', '#dh-class-container', '#dh-weapons-container', '#dh-domains-container']);
+        root.innerHTML = `<div class="dh-sheet-tabs">${getTabHTML('ficha', 'Ficha')}${getTabHTML('textos', 'Textos')}</div>`
+            + getPanelHTML('ficha', traitsHTML + statsHTML + defensesHTML + customStatsHTML + finalHeritageHTML + finalClassHTML + finalWeaponsHTML + finalDomainsHTML + inventoryHTML + generalAbilitiesHTML + finalLevelHTML)
+            + getPanelHTML('textos', textsHTML);
+
+        applySimpleCardView(doc, root, ['#dh-heritage-container', '#dh-class-container', '#dh-weapons-container', '#dh-domains-container']);
+    }
 
     const invTextarea = root.querySelector('#dh-inv-text');
     if (invTextarea && inventoryTextareaElem) {
@@ -1609,6 +1700,7 @@ function populateDaggerheartData(doc) {
                 openEditWeaponModal(doc, abilIdx, rawName, {
                     title: weaponTitle,
                     trait: weaponTrait,
+                    range: getWeaponRange(fields),
                     damageRaw: weaponDamageRaw,
                     desc: weaponDesc
                 });
@@ -1640,17 +1732,22 @@ function populateDaggerheartData(doc) {
                 const cardName = fields['name'] ? formatTextWithNewlines(fields['name']) : (rawName.startsWith('dom_') ? rawName.substring(4).trim() : rawName);
                 const cardNivel = fields['nível'] || fields['nivel'] ? formatTextWithNewlines(fields['nível'] || fields['nivel']) : '1';
                 const cardCusto = fields['custo'] ? formatTextWithNewlines(fields['custo']) : '0';
-                const cardDesc = fields['descrição'] || fields['descricao'] || fields['desc'] ? formatTextWithNewlines(fields['descrição'] || fields['descricao'] || fields['desc']) : '';
+                const rawDomainDesc = fields['descrição'] || fields['descricao'] || fields['desc'] || '';
+                const cardDesc = formatTextWithNewlines(stripCardImageLinks(rawDomainDesc));
 
                 openEditDomainModal(doc, abilIdx, rawName, {
                     name: cardName,
                     nivel: cardNivel,
                     custo: cardCusto,
-                    desc: cardDesc
+                    desc: cardDesc,
+                    image: getCardImageUrl(rawDomainDesc),
+                    counters: getCardCounters(macroContent)
                 });
             });
         });
     }
+
+    setupCardCounters(doc, root);
 
     const otherMacrosContainer = root.querySelector('#dh-other-macros-container');
     if (otherMacrosContainer) {
